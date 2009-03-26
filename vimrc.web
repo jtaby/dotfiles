@@ -1,0 +1,135 @@
+"""""" insert mode mappings
+imap <leader>dv <div id=""></div><ESC>F"i
+imap <leader>dc <div class=""><CR><TAB><CR></div><ESC>ki
+imap <leader>di <div id=""><CR><TAB><CR></div><ESC>ki
+imap <leader>sty <style type="text/css"><CR></style><ESC>?><CR>o
+imap <leader>p <p></p><ESC>3hi
+imap <leader>sp <span class=""></span><ESC>6hi
+imap <leader>h1 <h1></h1><ESC>4hi
+imap <leader>h2 <h2></h2><ESC>4hi
+imap <leader>h3 <h3></h3><ESC>4hi
+imap <leader>h4 <h4></h4><ESC>4hi
+imap <leader>h5 <h5></h5><ESC>4hi
+imap <leader>h6 <h6></h6><ESC>4hi
+imap <leader>an <a id=""></a><ESC>F"i
+imap <leader>ah <a href=""></a><ESC>F"i
+imap <leader>st <strong></strong><ESC>F>a
+imap <leader>bo <b></b><ESC>F>a
+" yes it's here twice. sue me. :P
+imap <leader>it <em></em><ESC>F>a
+imap <leader>em <em></em><ESC>F>a
+imap <leader>ul <ul><CR><CR></ul><ESC>ki
+imap <leader>ol <ol><CR><CR></ol><ESC>ki
+imap <leader>li <li></li><ESC>4hi
+imap <leader>dl <dl><CR><CR></dl><ESC>ki
+imap <leader>dd <dd></dd><ESC>4hi
+imap <leader>dt <dt></dt><ESC>4hi
+" border="0" is not allowed for HTML 4.01 Strict -- use CSS class instead: .noBorder {border: 0;}
+imap <leader>img <img id="" class="" src="" width="" height="" alt=""><ESC>12F"a
+imap <leader>td <td></td><ESC>4hi
+imap <leader>tr <tr><CR></tr><ESC>ko
+imap <leader>th <th></th><ESC>4hi
+imap <leader>cap <caption></caption><ESC>F>a
+imap <leader>form <form method="" action="" enctype="x-www-form-urlencoded"><CR><input type="reset" value="Clear Form" name="reset"> <input type="submit" value="Submit" name="submit"><CR></form><ESC>kko
+imap <leader>fs <fieldset><CR><legend></legend><CR><CR></fieldset><ESC>?</leg<CR>i
+imap <leader>lb <label for=""></label><ESC>F>a
+imap <leader>ipte <input class="" type="text" value="" name="" size="" maxlength=""><ESC>12F"a
+imap <leader>ipta <textarea class="" name="" rows="" cols=""></textarea><ESC>8F"a
+imap <leader>op <option></option><ESC>F>a
+imap <leader>add <address></address><ESC>F>a
+imap <leader>ac <acronym></acronym><ESC>F>a
+imap <leader>ab <abbr></abbr><ESC>F>a
+imap <leader>q <q></q><ESC>F>a
+imap <leader>tt <tt></tt><ESC>F>a
+imap <leader>pre <pre><CR></pre><ESC>?><CR>a
+imap <leader>scr <script type="text/javascript" src=""></script><ESC>F"i
+imap <leader>lk <link rel="stylesheet" href="" type="text/css"><ESC>3F"i
+" this should make editing css easier
+imap <leader>{ {}<esc>O
+
+"""""" normal mode mappings
+nmap ,mp ^i<p><esc>A</p><esc>^
+nmap ,hp a<p></p><esc>bba
+nmap ,hx wbF<df>f<df>
+nmap ,ht wbi<tt><esc>ea</tt><esc>bb
+nmap ,hs wbi<strong><ESC>ea</strong><ESC>bb
+nmap ,hu wbi<u><ESC>ea</i><ESC>bb
+nmap ,hi wbi<i><ESC>ea</i><ESC>bb
+nmap ,he wbi<em><ESC>ea</em><ESC>bb
+nmap ,hb wbi<b><ESC>ea</b><ESC>bb
+nmap ,h6 _i<h6><ESC>A</h6><ESC>^
+nmap ,h5 _i<h5><ESC>A</h5><ESC>^
+nmap ,h4 _i<h4><ESC>A</h4><ESC>^
+nmap ,h3 _i<h3><ESC>A</h3><ESC>^
+nmap ,h2 _i<h2><ESC>A</h2><ESC>^
+nmap ,h1 _i<h1><ESC>A</h1><ESC>^
+nmap ,mh wbgueyei<<ESC>ea></<ESC>pa><ESC>bba
+nmap ,li ^i<li><Esc>A</li><Esc>^4l
+nmap ,dt _i<dt><ESC>A</dt><ESC>
+nmap ,dd _i<dd><ESC>A</dd><ESC>
+nmap ,op ^i<option><ESC>A</option><ESC>
+
+" fix high utf-8 chars to html entities like &ldquo;
+" big thanks to jamessan in the #vim freenode channel for help figuring this out. sheesh. 
+" with dcraven and tpope for the assist on vim variable interpolation below, so I only have 
+" to change this in one place to get both the nmap and vmap consistent :D I realize the variable
+" isn't all that, yet, but I've only filled it with what I run into regularly. the more problems 
+" I encounter, the bigger it'll get, but only as needed. Adjust accordingly.
+let myentity = "–—“”‘’…ãáçêé½"
+nmap <leader>utf :.!perl -MHTML::Entities -Mutf8 -lne 'utf8::decode($_); print encode_entities($_, qq{<C-R>=g:myentity<CR>} );'<CR>
+
+"""""" visual mode mappings
+vmap ;dc <ESC>`>a<CR></div><ESC>`<i<div class=""><CR><ESC>
+vmap ;dv <ESC>`>a<CR></div><ESC>`<i<div id=""><CR><ESC>
+vmap ;ul <ESC>`>a<CR></ul><ESC>`<i<ul><CR><ESC>
+vmap ;ol <ESC>`>a<CR></ol><ESC>`<i<ol><CR><ESC>
+vmap ;dl <ESC>`>a<CR></dl><ESC>`<i<dl><CR><ESC>
+vmap ;li <ESC>`>a</li><ESC>`<i<li><ESC>
+vmap ;al y<ESC>`>a/"></a><ESC>`<i<a href="http://<ESC>f>p
+vmap ;ah <ESC>`>a</a><ESC>`<i<a href=""><ESC>F"
+vmap ;at <ESC>`>a</a><ESC>`<i<a href="" target="_new"><ESC>3F"
+vmap ;ao <ESC>`>a</a><ESC>`<i<a href="" onClick="window.open(this); return false;"><ESC>3F"
+vmap ;ap <Esc>`>a</a></p><ESC>`<i<p><a href="http:///"><ESC>F/i
+vmap ;inp <ESC>`>a"></p><ESC>`<i<p><input type="text" size="20" maxlength="25" name="<ESC>o
+vmap ;sp <ESC>`>a</span><ESC>`<i<span class=""><ESC>hi
+vmap ;op <ESC>`>a</option><ESC>`<i<option><ESC>
+vmap ;bo <ESC>`></b><ESC>`<i<b><ESC>
+vmap ;st <ESC>`>a</strong><ESC>`<i<strong><ESC>
+vmap ;it <ESC>`>a</i><ESC>`<i<i><ESC>
+vmap ;em <ESC>`>a</em><ESC>`<i<em><ESC>
+vmap ;qw <ESC>`>a"<ESC>`<i"<ESC>
+vmap ;sup <ESC>`>a</sup><ESC>`<i<sup><ESC>
+vmap ;sub <ESC>`>a</sub><ESC>`<i<sub><ESC>
+vmap <leader>q <ESC>`>a</q><ESC>`<i<q><ESC>
+" uses myentity to update this vmap concurrent with the nmap, no need to touch this
+vmap <leader>utf :!perl -MHTML::Entities -Mutf8 -lne 'utf8::decode($_); print encode_entities($_, qq{<C-R>=g:myentity<CR>});'<CR>
+
+"""""" abbreviations
+:ab idiv <div id=""></div><end><esc>bbla
+:ab cdiv <div class=""></div><end><esc>bbla
+:ab dtxh <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+:ab dtxt <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+:ab dth4 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+:ab dtht4 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
+:ab dth3 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+:ab ctiso <meta http-equiv="Content-Type" content="text/html; CHARSET=iso-8859-1">
+:ab ctutf <meta http-equiv="Content-Type" content="text/html; CHARSET=utf-8">
+:ab mct <meta http-equiv="Content-Type" content="text/html; CHARSET=iso-8859-1">
+:ab mgen <meta name="generator" content="VIM - Vi IMproved, v7.0.42 http://www.vim.org/">
+:ab lmade <link rev="made" href="http://www.madhousegraphics.com/">
+:ab lsty <link rel="stylesheet" type="text/css" href="/res/style/FIXME.css">
+
+" css specific stuff
+" comment wrap
+nmap ,mc ^i/* <ESC>A */<ESC>^
+vmap ;mc <ESC>`>a */<ESC>`<i/* <ESC>
+
+" php specific annoyances
+imap <leader>get $_GET['']<ESC>2F'a
+imap <leader>post $_POST['']<ESC>2F'a
+imap <leader>serv $_SERVER['']<ESC>2F'a
+
+" set this for the :TOhtml command for exporting files with the current syntax-highlighting colorscheme for viewing on the web
+let html_use_css = 1 
+
+" vim600: set filetype=vim :
