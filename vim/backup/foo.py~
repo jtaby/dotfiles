@@ -1,0 +1,14 @@
+#!/opt/local/bin/python2.6
+
+from PIL import Image, ImageDraw, ImageFont, ImageColor
+
+
+im = Image.open("game_canvas.png")
+draw = ImageDraw.Draw(im)
+font = ImageFont.truetype("Myriad.otf",6);
+
+for i in range(15):
+  for j in range(15):
+    draw.text((i*21+2,j*21+2),str(i)+""+str(J),fill=1)
+
+im.save("generated_image.png")

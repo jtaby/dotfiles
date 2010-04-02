@@ -1,0 +1,4 @@
+
+# rvm-install added line:
+if [[ -s /Users/majd/.rvm/scripts/rvm ]] ; then source /Users/majd/.rvm/scripts/rvm ; fi
+

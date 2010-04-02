@@ -1,0 +1,14 @@
+form_setup:
+  image:
+      class: File
+      params:
+        upload_path: /home/users/web/b1415/apo.dwhkximv/capital-1.biz/uploads/home
+        url_path: uploads/home
+        make_thumbnail: true
+        width:287
+        height:225
+  content:
+      class: TextArea
+      attributes:
+          cols: 50
+          rows: 20

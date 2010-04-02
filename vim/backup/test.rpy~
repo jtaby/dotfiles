@@ -1,0 +1,14 @@
+from twisted.internet import defer, reactor
+from twisted.web.client import getPage
+
+@defer.inlineCallbacks
+def get_deferred():
+  d = defer.waitForDeferred(getPage('http://www.google.com'))
+  yield d
+  page = d.getResult()
+
+  print page
+
+deferred = get_deferred()
+deferred.addCallback(lambda _:reactor.stop())
+reactor.run()

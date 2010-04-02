@@ -1,0 +1,383 @@
+// ==========================================================================
+// Project:   YouQueue.videoController
+// Copyright: ©2009 My Company, Inc.
+// ==========================================================================
+/*globals YouQueue */
+
+/** @class
+
+  (Document Your Controller Here)
+
+  @extends SC.ObjectController
+*/
+YouQueue.queueController = SC.ArrayController.create(
+  SC.CollectionViewDelegate,
+/** @scope YouQueue.videoController.prototype */ {
+
+  // TODO: Add your own code here.
+	currentlyPlaying: -1,
+	_queueSize: 0,
+	isEmpty: YES,
+	hasUpcomingVideos: NO,
+	
+	isShuffling: NO,
+	isRepeating: NO,
+	
+	selectingPane: null,
+	
+  displayQueuePicker: function() {
+			this.setupPane();
+			var arr = YouQueue.searchController.get('selection');
+			var len = arr.get('length');
+			var i=0;
+			var index = -1;
+			if(!len) return;
+			
+			arr.forEach(function(obj,idx){
+				if(i === len-1){
+					index = idx;
+				}
+				i++;
+			});
+			
+			if(index === -1) return;
+			
+			var path = 'mainPane.wrapper.content.topLeftView.browser.searchContainer.searchResults.contentView';
+			var view = YouQueue.mainPage.getPath(path);
+			view = view.itemViewForContentIndex(index);
+			this.selectingPane.popup(view);
+			return;  	
+  },
+		
+	setupPane: function() {
+		var queues = YouQueue.libraryController.get('arrangedObjects');
+		var len = queues.get('length');
+		var i = 0;
+		var items = [];
+
+		for(i=0;i<len;i++){
+			items[i] = { 
+				title: queues.objectAt(i).get('name'),
+				isEnabled: YES, 
+				separator: NO, 
+				action: 'YouQueue.queueController.enqueueFromMenuPane',
+				originalObject: queues.objectAt(i) 
+			};
+		}
+
+		var pane = SC.MenuPane.create({
+			layerId: 'queuePicker',
+			items: items,
+			isEnabled: YES,
+			contentIsEnabledKey: 'isEnabled',
+			itemTitleKey: 'title',
+			itemSeparatorKey: 'separator',
+			itemActionKeu: 'action',
+			itemValueKey: 'originalObject',
+      layout: { width: 150 },
+			contentView: SC.View.extend({
+			  layout: { width: 150, height: 200 }
+			})
+		});
+		
+		this.set('selectingPane',pane);
+	},	
+	
+	enqueueFromMenuPane: function(obj) {
+		var object = obj.get('content').get('value');
+		YouQueue.libraryController.set('selectedLibrary',object);
+		this.enqueueSearchResults(object.get('id'),YES);
+	},
+	
+  enqueueSearchResults: function(playlist_id,enqueuedFromPane) {
+	  if(!enqueuedFromPane && !YouQueue.browserController.get('queueIsSelected')){
+		  this.displayQueuePicker();
+			return;
+	  }
+	  var currentQueueLength = this._queueSize;
+	  var selection = YouQueue.searchController.get('selection');
+	  if(!selection.length()){
+			return;
+		}
+		
+		var len = selection.get('length');
+		if(currentQueueLength === 0 && len > 0){
+			this.set('isEmpty',NO);
+		}
+		
+		var records = selection.toArray();
+		this._queueSize += len;
+		var content = this.get('arrangedObjects');
+		var item;
+		for(var i=0;i<len;i++){			
+			item = records[i];
+			item.set('queueIndex',i+currentQueueLength);
+	
+			// create a new task in the store
+			var itemsKey = item.get('storeKey');
+			var full_hash;
+			if(item.get('store').dataHashes){	
+				full_hash = item.get('store').dataHashes[itemsKey];
+				this._saveMediaRecord(full_hash,playlist_id);
+			}
+		}
+		
+		YouQueue.store.commitRecords(YouTube.Video);
+
+		var selection = content.toArray().concat(records);
+		this.set('content',selection);
+		
+		SCNotify.notificationController.invokeMessage({
+			title: 'YouQueue',
+			message: len+' items have been added to your queue',
+			invokationDelay: 1
+		});
+		YouQueue.searchController.set('searchIsActive',NO);		
+	},
+
+	_saveMediaRecord: function(full_hash,playlist_id) {
+		var id, small_hash = {};
+		
+		small_hash.media$group 								 = {};
+		small_hash.media$group.media$title  	 = full_hash.media$group.media$title;
+		small_hash.link												 = full_hash.link;
+		small_hash.media$group.media$thumbnail = full_hash.media$group.media$thumbnail;
+		small_hash.media$group.yt$duration 		 = full_hash.media$group.yt$duration;
+		small_hash.media$group.media$player 	 = full_hash.media$group.media$player;
+		small_hash.yt$statistics					  	 = {};
+		small_hash.yt$statistics.viewCount  	 = full_hash.yt$statistics.viewCount;
+		
+		if(typeof(playlist_id) === "number"){
+			id = playlist_id;
+		} else {
+			id = YouQueue.libraryController.get('selectedLibrary').get('id');
+			id = id.split('/');
+			id = id[id.length-1];
+		}
+
+		return YouQueue.store.createRecord(YouTube.Video, {
+      'media': {
+        "playlist_id": id,
+        "data_hash": SC.json.encode(small_hash)
+			}
+    });		
+	},	
+  
+  contentHasChanged: function() {
+		var content = this.get('arrangedObjects');
+		if(!content) return;
+		
+	  var queueSize = content.length();
+
+	  this._queueSize = queueSize;
+		if(!queueSize) return;
+		
+		var cur_idx = this.get('currentlyPlaying');
+		var i = 0;
+		
+		for(;i<queueSize;i++){
+			content.objectAt(i).set('queueIndex',i);
+		}
+		
+	  queueSize -= cur_idx+1;
+    this.set('hasUpcomingVideos',queueSize > 0);
+
+		var path = 'queueScene.browserContent.contentView';
+		var view = YouQueue.mainPage.getPath(path);
+		if(!view.get('isFirstResponder')){
+			view.becomeFirstResponder();
+			YouQueue.queueController.selectObject(content.firstObject());
+		}
+
+  }.observes('[]','currentlyPlaying'),  
+
+  hasQueuedContent: function() {
+		var content = this.get('arrangedObjects');
+		if(!content) return 0;
+		var isRepeating = this.get('isRepeating');
+		
+	  var fullQueueLength = content.length();
+	  var queueLength = fullQueueLength - this.currentlyPlaying+1;
+
+    return queueLength > 0 || (isRepeating & fullQueueLength) || (isShuffling & fullQueueLength);
+  },
+  
+	advanceToNextVideo: function() {
+		
+		var cur_idx = this.get('currentlyPlaying');
+		var size = this._queueSize;
+		var newPlayingIndex = cur_idx+1;
+		
+		if(this.get('isShuffling')){
+			newPlayingIndex = Math.floor(Math.random()*size);
+				
+		}
+		if(cur_idx >= size-1){
+			if(this.get('isRepeating'))
+				newPlayingIndex = 0;
+			else
+				return;
+		}
+		
+		var content = this.get('arrangedObjects');
+		
+		//If this is the first time it's getting called, cur_idx may be -1
+		if(cur_idx >= 0){
+			content.objectAt(cur_idx).set('playingIcon','');	
+		}
+			
+		content.objectAt(newPlayingIndex).set('playingIcon',static_url('images/playing.png'));
+		
+		this.set('currentlyPlaying',newPlayingIndex);
+		return this.getVideoAtIndex(newPlayingIndex);
+	},
+	
+	goBackToPreviousVideo: function() {
+		var cur_idx = this.get('currentlyPlaying');
+		if(cur_idx <= 0) return; // Can't go back if you're on the first video
+		var newPlayingIndex = cur_idx-1;
+		
+		var content = this.get('arrangedObjects');
+		content.objectAt(cur_idx).set('playingIcon','');	
+		content.objectAt(cur_idx-1).set('playingIcon',static_url('images/playing.png'));
+		
+		this.set('currentlyPlaying',newPlayingIndex);
+		return this.getVideoAtIndex(newPlayingIndex);
+	},
+	
+	goToVideoAtIndex: function(index) {
+		if(index < 0 || index > this._queueSize) return; //index out of range
+		var cur_idx = this.get('currentlyPlaying');
+		if(cur_idx == -1) cur_idx = 0;
+
+		var content = this.get('arrangedObjects');
+		content.objectAt(cur_idx).set('playingIcon','');	
+		content.objectAt(index).set('playingIcon',static_url('images/playing.png'));
+		
+		this.set('currentlyPlaying',index);
+
+		return this.getVideoAtIndex(index);
+	},
+	
+  getVideoAtIndex: function(index) {
+	  var size = this._queueSize;
+		if(!size) return null; // Queue is empty
+		
+		var content = this.get('arrangedObjects');
+		if(index >= 0 && index < size){ // index is in range
+			return content.objectAt(index);
+		} else {
+			return null;
+		}	  	
+  },
+
+
+	collectionViewDeleteContent: function(view, content, indexes) {
+ 
+    // destroy the records
+    var records = indexes.map(function(idx) {
+      return this.objectAt(idx);
+    }, this);
+    records.invoke('destroy');
+ 
+    var selIndex = indexes.get('min')-1;
+    if (selIndex<0) selIndex = 0;
+    this.selectObject(this.objectAt(selIndex));
+  },
+	
+  // ..........................................................
+  // DRAG SOURCE SUPPORT
+  // 
+  
+	indices: null,
+
+  /**
+    When dragging, add an Employee data type to the drag.
+  */
+  collectionViewDragDataTypes: function(view) {
+    return [YouTube.Video];
+  },
+  
+  /**
+    If the requested dataType if employees, provide the currently selected
+    employees.  Otherwise return null.
+  */
+  collectionViewDragDataForType: function(view, drag, dataType) {
+    var ret=null, sel;
+    
+    if (dataType === YouTube.Video) {
+      sel = view.get('selection');
+      ret = [];
+      if (sel) sel.forEach(function(x) { ret.push(x); }, this);
+    }
+    
+    return ret ;
+  },
+
+	collectionViewDragViewFor: function(collectionView, indices) {
+		this.set('indices',indices.toArray());
+		return null;
+	},
+	
+	dragUpdated: function(drag, evt){
+		// console.log('updated');
+	},
+	
+
+  // ..........................................................
+  // DROP TARGET SUPPORT
+  // 
+
+  /**
+    If the drag data includes employees, then we can accept a move or copy
+    from most locations.  If the dragSource is another collection view sharing
+    the same delegate, then we know how to do a move, so allow that.  
+    Otherwise, just allow a copy.
+  */
+  collectionViewComputeDragOperations: function(view, drag, proposedDragOperations) {
+    if (drag.hasDataType(YouTube.Video)) {
+      var source = drag.get('source');
+      if (source && source.delegate === this) return SC.DRAG_MOVE;
+      else return SC.DRAG_COPY;
+
+    } else return SC.DRAG_NONE;
+  },
+  
+  /**
+    Called if the user actually drops on the view.  Just get the data from
+    the drag and insert before or after the insertion index.  If op is 
+    SC.DRAG_MOVE, then also remove the same objects from the other content
+    and clear its selection.
+  */
+  collectionViewPerformDragOperation: function(view, drag, dragOp, idx, dropOp) {
+  
+    if (dragOp & SC.DRAG_REORDER) return SC.DRAG_NONE; // allow reorder
+    
+    var employees = drag.dataForType(YouTube.Video),
+        content   = view.get('content'),
+        len       = view.get('length'),
+        source    = drag.get('source'),
+        ret       = SC.DRAG_NONE;
+    
+    // only if data is available from drag
+    if (!employees) return ret;
+    
+    // adjust the index to the location to insert and then add it
+    if (dropOp & SC.DROP_AFTER) idx--;
+    if (idx>len) idx = len;
+    content.replace(idx, 0, employees);
+    
+    // if we can move, then remove employees from the old one
+    if (!(dragOp & SC.DRAG_MOVE)) ret = SC.DRAG_COPY;
+    else if (content = source.get('content')) {
+      content.removeObjects(employees);
+      ret = SC.DRAG_MOVE;
+    }       
+    
+    // finally, select the new employees
+    view.select(SC.IndexSet.create(idx, employees.get('length')));
+    view.becomeFirstResponder();
+    
+    return ret;
+  }
+}) ;

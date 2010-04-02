@@ -1,0 +1,922 @@
+//
+//  GameViewController.m
+//  Blokus
+//
+//  Created by Majd Taby on 1/1/10.
+//  Copyright 2010 __MyCompanyName__. All rights reserved.
+//
+
+#import <math.h>
+#import "GameViewController.h"
+#import "ScoreBoardViewController.h"
+#import "CountDownViewController.h"
+#import "RegularPlayer.h"
+#import "AIPlayer.h"
+
+#define NUM_STARTING_PIECES 21
+#define PIECE_PICKER_ROW_HEIGHT 55
+#define ITEM_PADDING 15
+
+@implementation GameViewController
+
+@synthesize scoreBoard, countDown;
+@synthesize bottomBar, pieceScrollView, piecePicker, board;
+@synthesize state, pieceHasMoved, activePiece, pointOfOrigin, originalPieceLocation;
+@synthesize orangeScore, purpleScore, placingPieceShadow;
+@synthesize orangePlayer, purplePlayer, currentPlayer;
+@synthesize draggingOffsets, placedPieces, unplacedPieces, boardMatrix;
+@synthesize piecePickerLeftOffsetBottom, piecePickerLeftOffsetTop;
+
+#pragma mark Initializers
+
+- (void) viewDidLoad {
+  [self initScoreBoard];
+  [self initCountDownTimer];
+  [self initPieceSelector];
+  [self initGameOptions];
+  [self turnStarted];
+  [self initGameCanvas];
+  
+  [super viewDidLoad];
+}
+
+- (void) initGameCanvas{
+  UIImageView *image = [[UIImageView alloc] initWithFrame:CGRectMake(0, 0, 320, 416)];
+  [image setImage:[UIImage imageNamed:@"game_canvas.png"]];
+  
+  placingPieceShadow = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 320, 318)];
+  [placingPieceShadow setBackgroundColor:[UIColor colorWithRed:0.0 green:0.0 blue:0.0 alpha:0.4]];
+  [placingPieceShadow setAlpha:0.0];
+  
+  UILabel *pieceShadowLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 280, 320, 20)];
+  [pieceShadowLabel setText:@"Swipe anywhere to move the piece"];
+  [pieceShadowLabel setFont:[UIFont boldSystemFontOfSize:18.0]];
+  [pieceShadowLabel setTextColor:[UIColor whiteColor]];
+  [pieceShadowLabel setBackgroundColor:[UIColor colorWithRed:0.0 green:0.0 blue:0.0 alpha:0.0]];
+  [pieceShadowLabel setOpaque:NO];
+  [pieceShadowLabel setTextAlignment:UITextAlignmentCenter];
+  [pieceShadowLabel setAlpha:0.4];
+  
+  [placingPieceShadow addSubview:pieceShadowLabel];
+  
+  [board addSubview:image];  
+  [board addSubview:placingPieceShadow];
+}
+
+- (void) initScoreBoard {
+	UINavigationItem *navItem = [self navigationItem];
+  ScoreBoardViewController *scoreboardView = [[ScoreBoardViewController alloc] initWithNibName:@"ScoreBoard" bundle:nil];
+  scoreBoard = scoreboardView;
+  [navItem setTitleView:scoreboardView.view];
+}
+
+- (void) initCountDownTimer{
+	UINavigationItem *navItem = [self navigationItem];
+  CountDownViewController *countDownView = [[CountDownViewController alloc] initWithNibName:@"CountDownTimer" bundle:nil];
+  countDown = countDownView;
+
+  UIBarButtonItem *countDownItem = [[UIBarButtonItem alloc] initWithCustomView:countDownView.view];
+  navItem.rightBarButtonItem = countDownItem;
+}
+
+- (void) initGameOptions{
+  [self setDraggingOffsets:CGPointMake(0, 0)];
+  
+  
+  boardMatrix  = [[LocationMatrix alloc] initWithMatrixSizeOfRows:15 andColumns:15];
+  placedPieces = [[NSMutableArray alloc] init];
+  
+  orangePlayer = [[RegularPlayer alloc] init];
+  purplePlayer = [[AIPlayer alloc] init];
+  
+  [orangePlayer setGameDelegate:self];
+  [purplePlayer setGameDelegate:self];
+  
+  [orangePlayer setStartingPosition:CGPointMake(5.0,9.0)];
+  [purplePlayer setStartingPosition:CGPointMake (10.0, 4.0)];
+  
+  currentPlayer = orangePlayer;  
+  
+  [bottomBar setUserInteractionEnabled:YES];
+}
+
+int max(int a, int b){
+  return (a < b)? b : a;
+}
+
+- (void) initPieceSelector{
+  piecePickerLeftOffsetBottom = ITEM_PADDING;
+  piecePickerLeftOffsetTop = ITEM_PADDING;
+  
+  piecePicker = [[UIView alloc] init];
+  self.unplacedPieces = [[NSMutableArray alloc] init];
+  PieceView *piece;
+  
+  // 1 square pieces
+  piece = [self addPieceWithShape:@"1"           andType:SMALL_ORANGE_PIECE inRow:1]
+  [self.unplacedPieces addObject:piece];
+  [piece release];
+  
+  // 2 square pieces
+  piece = [self addPieceWithShape:@"11"          andType:SMALL_ORANGE_PIECE inRow:1];
+  [self.unplacedPieces addObject:piece];
+  [piece release];
+  
+  // 3 square pieces
+  piece = [self addPieceWithShape:@"111"         andType:SMALL_ORANGE_PIECE inRow:1];
+  [self.unplacedPieces addObject:piece];
+  [piece release];
+
+  piece = [self addPieceWithShape:@"11,10"       andType:SMALL_ORANGE_PIECE inRow:1];
+  [self.unplacedPieces addObject:piece];
+  [piece release];
+  
+  // 4 square pieces
+  piece = [self addPieceWithShape:@"1111"        andType:SMALL_ORANGE_PIECE inRow:1];
+  [self.unplacedPieces addObject:piece];
+  [piece release];
+
+  piece = [self addPieceWithShape:@"111,100"     andType:SMALL_ORANGE_PIECE inRow:1];
+  [self.unplacedPieces addObject:piece];
+  [piece release];
+
+  piece = [self addPieceWithShape:@"111,010"     andType:SMALL_ORANGE_PIECE inRow:1];
+  [self.unplacedPieces addObject:piece];
+  [piece release];
+
+  piece = [self addPieceWithShape:@;
+  piece = piece"11,11"       andType:SMALL_ORANGE_PIECE inRow:1];
+  [piece release];
+  [self.unplacedPieces addObject:piece];
+  [piece release];
+  piece = [self addPieceWithShape:@"011,110"     andType:SMALL_ORANGE_PIECE inRow:1];
+  [self.unplacedPieces addObject:piece];
+  [piece release];
+  
+  // 5 ma square pieces
+  piece = [self addPieceWithShape:@"11111"       andType:SMALL_ORANGE_PIECE inRow:0];
+  [self.unplacedPieces addObject:piece];
+  [piece release];
+  piece = [self addPieceWithShape:@"1111,1000"   andType:SMALL_ORANGE_PIECE inRow:0];
+  [self.unplacedPieces addObject:piece];
+  [piece release];
+  piece = [self addPieceWithShape:@"111,110"     andType:SMALL_ORANGE_PIECE inRow:0];
+  [self.unplacedPieces addObject:piece];
+  [piece release];
+  piece = [self addPieceWithShape:@"111,010,010" andType:SMALL_ORANGE_PIECE inRow:0];
+  [self.unplacedPieces addObject:piece];
+  [piece release];
+  piece = [self addPieceWithShape:@"100,100,111" andType:SMALL_ORANGE_PIECE inRow:0];
+  [self.unplacedPieces addObject:piece];
+  [piece release];
+  piece = [self addPieceWithShape:@"0111,1100"   andType:SMALL_ORANGE_PIECE inRow:0];
+  [self.unplacedPieces addObject:piece];
+  [piece release];
+  piece = [self addPieceWithShape:@"001,111,100" andType:SMALL_ORANGE_PIECE inRow:0];
+  [self.unplacedPieces addObject:piece];
+  [piece release];
+  [self.unplacedPieces addObject:[self addPieceWithShape:@"110,011,001" andType:SMALL_ORANGE_PIECE inRow:0]];
+  piece = [self addPieceWithShape:@"11,10,11"    andType:SMALL_ORANGE_PIECE inRow:0];
+  [self.unplacedPieces addObject:piece];
+  [piece release];
+  piece = [self addPieceWithShape:@"011,110,010" andType:SMALL_ORANGE_PIECE inRow:0];
+  [self.unplacedPieces addObject:piece];
+  [piece release];
+  piece = [self addPieceWithShape:@"010,111,010" andType:SMALL_ORANGE_PIECE inRow:0];
+  [self.unplacedPieces addObject:piece];
+  [piece release];
+  piece = [self addPieceWithShape:@"1111,0100"   andType:SMALL_ORANGE_PIECE inRow:0];
+  [self.unplacedPieces addObject:piece];
+  [piece release];
+  
+  [piecePicker setFrame:CGRectMake(0, 5, max(piecePickerLeftOffsetBottom,piecePickerLeftOffsetTop), 97)];
+  [pieceScrollView setContentSize:CGSizeMake(max(piecePickerLeftOffsetBottom,piecePickerLeftOffsetTop), 97)];
+  [pieceScrollView addSubview:piecePicker];
+}
+
+
+
+
+
+
+
+
+#pragma mark Helpers
+
+- (PieceView *) addPieceWithShape:(NSString *) shape andType:(kPieceStyles_t) type inRow: (int) row {
+  PieceView *piece = [[PieceView alloc] initWithType:type andShape:shape];
+  
+  int rows = [piece.squareLocations rows];
+  int cols = [piece.squareLocations cols];
+  int side_length = [piece sideLength];
+
+  int left_offset;
+  [piece setRowInPicker:row];
+  if(row == 0){
+    left_offset = piecePickerLeftOffsetTop;
+    piecePickerLeftOffsetTop += ITEM_PADDING + side_length * cols;
+  }
+  else {
+    left_offset = piecePickerLeftOffsetBottom;
+    piecePickerLeftOffsetBottom += ITEM_PADDING + side_length * cols;
+  }
+  
+  int index = [unplacedPieces count];
+  [piece setIndexInPicker:index];
+  [piece setFrame:CGRectMake(left_offset, row * PIECE_PICKER_ROW_HEIGHT, cols * side_length, rows * side_length)];
+  [piece setNeedsDisplay];
+  [piece setDelegate:self];  
+  [piecePicker addSubview:piece];
+  
+  return piece;  
+}
+
+- (void) rearrangePiecePicker{
+  int i,count;
+  i=0;
+  count = [unplacedPieces count];
+  piecePickerLeftOffsetTop = ITEM_PADDING;
+  piecePickerLeftOffsetBottom = ITEM_PADDING;
+  for (i=0; i<count; i++) {
+    PieceView *piece = [unplacedPieces objectAtIndex:i];
+    int rows = [piece.squareLocations rows];
+    int cols = [piece.squareLocations cols];
+    int side_length = [piece sideLength];
+    
+    int left_offset;
+    
+    if([piece rowInPicker] == 0){
+      left_offset = piecePickerLeftOffsetTop;
+      piecePickerLeftOffsetTop += ITEM_PADDING + side_length * cols;
+    }
+    else {
+      left_offset = piecePickerLeftOffsetBottom;
+      piecePickerLeftOffsetBottom += ITEM_PADDING + side_length * cols;
+    }
+    
+    [piece setFrame:CGRectMake(left_offset, [piece rowInPicker] * PIECE_PICKER_ROW_HEIGHT, cols * side_length, rows * side_length)];
+  }
+  
+  [piecePicker setFrame:CGRectMake(0, 5, max(piecePickerLeftOffsetBottom,piecePickerLeftOffsetTop), 97)];
+  [pieceScrollView setContentSize:CGSizeMake(max(piecePickerLeftOffsetBottom,piecePickerLeftOffsetTop), 97)];
+}
+
+- (void) showOrientationEditor{
+  
+  [UIView beginAnimations:nil context:NULL];
+  [UIView setAnimationDuration:0.5];
+  [UIView setAnimationCurve:UIViewAnimationCurveEaseInOut];
+  
+  [bottomBar setFrame:CGRectMake(1, 460-140, 371, 97)];
+  [pieceScrollView setFrame:CGRectMake(320, 319, 271, 97)];
+  [placingPieceShadow setAlpha:1.0];
+  
+  [UIView commitAnimations];
+  
+  UIButton *cancelButton = [UIButton buttonWithType:UIButtonTypeCustom];
+  [cancelButton setFrame:CGRectMake(0, 0, 60, 30)];
+  [cancelButton setBackgroundImage:[UIImage imageNamed:@"cancel_button.png"] forState:UIControlStateNormal];
+  [cancelButton addTarget:self action:@selector(cancelPiecePlacement) forControlEvents:UIControlEventTouchUpInside];
+  
+  
+  UINavigationItem *navItem = [self navigationItem];
+  UIBarButtonItem *cancelButtonItem = [[UIBarButtonItem alloc] initWithCustomView:cancelButton];  
+  [navItem setLeftBarButtonItem:cancelButtonItem];
+}
+
+- (void) cancelPiecePlacement{
+
+  [activePiece retain];
+  [activePiece removeFromSuperview];
+  [piecePicker addSubview:activePiece];
+  
+  [activePiece setIsPicked: FALSE];  
+  [activePiece release];
+
+  [pieceScrollView setUserInteractionEnabled:YES];
+  pieceHasMoved = FALSE;
+  
+  [activePiece setSideLength:SMALL_PIECE_LENGTH];
+  if([activePiece style] == ORANGE_PIECE){
+    [activePiece setStyle:SMALL_ORANGE_PIECE];
+  } else if ([activePiece style] == PURPLE_PIECE) {
+    [activePiece setStyle:SMALL_PURPLE_PIECE];
+  }
+  [activePiece updateFrame];
+  [activePiece setNeedsDisplay];
+  
+  [UIView beginAnimations:nil context:NULL];
+  [UIView setAnimationDuration:0.3];
+  [UIView setAnimationRepeatAutoreverses:NO];
+  [UIView setAnimationRepeatCount:0.0];
+  [UIView setAnimationCurve:UIViewAnimationCurveEaseInOut];
+  [activePiece setAlpha:1.0];
+  [UIView commitAnimations];
+    
+
+  [self rearrangePiecePicker];
+  [self hideOrientationEditor];
+  
+  activePiece = nil;
+}
+
+- (void) hideOrientationEditor{
+  
+  [UIView beginAnimations:nil context:NULL];
+  [UIView setAnimationDuration:0.5];
+  [UIView setAnimationCurve:UIViewAnimationCurveEaseInOut];
+  
+  [bottomBar setFrame:CGRectMake(-318, 319, 371, 97)];
+  [pieceScrollView setFrame:CGRectMake(49, 319, 271, 97)];
+  [placingPieceShadow setAlpha:0.0];
+  
+  [UIView commitAnimations];
+  
+	UINavigationItem *navItem = [self navigationItem];
+  [navItem setLeftBarButtonItem:nil];
+}
+
+- (void) alertUserOfBadMove{
+  
+  [UIView beginAnimations:nil context:NULL];
+  [UIView setAnimationDuration:0.4];
+  [UIView setAnimationCurve:UIViewAnimationCurveEaseInOut];
+  
+  [placingPieceShadow setBackgroundColor:[UIColor colorWithRed:255.0 green:0.0 blue:0.0 alpha:0.4]];
+  [placingPieceShadow setBackgroundColor:[UIColor colorWithRed:0.0 green:0.0 blue:0.0 alpha:0.4]];
+  
+  [UIView commitAnimations];
+}
+
+
+- (CGPoint) getSnappedOriginForPiece:(PieceView *) pieceView atOrigin: (CGPoint) displacement andReturnSquareIndex: (BOOL) wantsIndex andIncludeDisplacement: (BOOL) addsDisplacement{
+  int boardWidth = 318;
+  CGFloat spotSize = boardWidth / 15;
+  int x=0,y=0;
+  
+  if(addsDisplacement){
+    displacement.x -= draggingOffsets.x;
+    displacement.y -= draggingOffsets.y; 
+  } 
+  
+  if(pieceView.isPicked == FALSE) return displacement;
+  
+  int colNumber = round(displacement.x /spotSize);
+  int rowNumber = round(displacement.y /spotSize);
+  
+  if(colNumber < 0) colNumber = 0;
+  if(rowNumber < 0) rowNumber = 0;
+    
+  while((pieceView.squareLocations.cols * spotSize) + (colNumber * spotSize) > 320){
+    colNumber--;
+  }
+  
+  while(pieceView.squareLocations.rows * spotSize + rowNumber * spotSize > 320){
+    rowNumber--;
+  }
+  
+  while(pieceView.squareLocations.rows * spotSize + rowNumber * spotSize < 0){
+    rowNumber++;
+  }
+  
+  x = colNumber * spotSize;
+  y = rowNumber * spotSize;
+  
+  if(wantsIndex){
+    return CGPointMake(colNumber,rowNumber);
+  }
+  else {
+    return CGPointMake(x, y);
+  }
+}
+
+- (CGPoint) getSnappedOriginForPiece:(PieceView *) pieceView atOrigin: (CGPoint) origin{
+  return [self getSnappedOriginForPiece:pieceView atOrigin:origin andReturnSquareIndex:NO andIncludeDisplacement:YES];
+}
+
+- (BOOL) piecePlacementIsValid:(PieceView *)pieceView atOrigin:(CGPoint)origin{
+  int x;
+  BOOL valid = TRUE;
+  int y;
+  
+  x = 1;
+  y = 1;
+  
+  // Check that we're a valid starting position
+  if(NUM_STARTING_PIECES == [unplacedPieces count]){
+    int i,j;
+    
+    int rows = [pieceView.squareLocations getMatrixRows];
+    int cols = [pieceView.squareLocations getMatrixColumns];
+    
+    for(i=0;i<rows;i++){
+      for (j=0; j<cols; j++) {
+        
+        if(origin.x + j == currentPlayer.startingPosition.x && 
+           origin.y + i == currentPlayer.startingPosition.y && 
+           [pieceView.squareLocations squareExistsAtRow:i andColumn:j]){
+          return YES;
+        } 
+      }
+    }
+    
+  }
+  else {
+    //check if it overlaps another piece
+    int i,j;
+    
+    int rows = [pieceView.squareLocations getMatrixRows];
+    int cols = [pieceView.squareLocations getMatrixColumns];
+    
+    for(i=0;i<rows && valid;i++){
+      for (j=0; j<cols && valid; j++) {
+        
+        if([pieceView.squareLocations squareExistsAtRow:i andColumn:j] && [boardMatrix squareExistsAtRow:origin.y + i andColumn:origin.x + j]){
+         valid = FALSE; 
+        }
+      }
+    }
+    
+    //check if it is diagonally adjacent
+    if(valid){
+      kPieceStyles_t currentType = (currentPlayer == orangePlayer)? ORANGE_PIECE : PURPLE_PIECE;
+      BOOL topLeftValid=FALSE, 
+      topRightValid=FALSE, 
+      bottomLeftValid=FALSE, 
+      bottomRightValid=FALSE;
+      
+      // Check the sides
+      for(i=0;i<rows && valid;i++){
+        for (j=0; j<cols && valid; j++) {
+          if([pieceView.squareLocations squareExistsAtRow:i andColumn:j]){
+            
+            if(![pieceView.squareLocations squareExistsAtRow:i andColumn:j-1] && 
+               [boardMatrix squareExistsAtRow:origin.y + i andColumn:origin.x + j-1 ofType: currentType]){
+              valid = FALSE;
+              
+            } 
+            else if (![pieceView.squareLocations squareExistsAtRow:i andColumn:j+1] && 
+                     [boardMatrix squareExistsAtRow:origin.y + i andColumn:origin.x + j+1 ofType: currentType]){
+              valid = FALSE;
+              
+            }
+            else if (![pieceView.squareLocations squareExistsAtRow:i-1 andColumn:j] && 
+                     [boardMatrix squareExistsAtRow:origin.y + i-1 andColumn:origin.x + j ofType: currentType]){
+                valid = FALSE;
+            } 
+            else if (![pieceView.squareLocations squareExistsAtRow:i+1 andColumn:j] && 
+                     [boardMatrix squareExistsAtRow:origin.y + i+1 andColumn:origin.x + j ofType: currentType]){
+              valid = FALSE;
+              
+            }
+          }
+        }
+      }
+      
+      // Check the corners
+      for(i=0;i<rows;i++){
+        for (j=0; j<cols; j++) {
+          if([pieceView.squareLocations squareExistsAtRow:i andColumn:j]){
+            
+            //check if piece is a top left corner
+            if(![pieceView.squareLocations squareExistsAtRow:i andColumn:j-1] && 
+               ![pieceView.squareLocations squareExistsAtRow:i-1 andColumn:j] && 
+               ![pieceView.squareLocations squareExistsAtRow:i-1 andColumn:j-1] && 
+               [boardMatrix squareExistsAtRow:origin.y + i-1 andColumn:origin.x + j-1 ofType: currentType]){
+              topLeftValid = TRUE;
+            }
+            
+            //check if piece is a top right corner
+            if(![pieceView.squareLocations squareExistsAtRow:i andColumn:j+1] && 
+               ![pieceView.squareLocations squareExistsAtRow:i-1 andColumn:j] && 
+               ![pieceView.squareLocations squareExistsAtRow:i-1 andColumn:j+1] && 
+               [boardMatrix squareExistsAtRow:origin.y + i-1 andColumn:origin.x + j+1 ofType: currentType]){
+              topRightValid = TRUE;
+            }
+            
+            //check if piece is a bottom left corner
+            if(![pieceView.squareLocations squareExistsAtRow:i andColumn:j-1] && 
+               ![pieceView.squareLocations squareExistsAtRow:i+1 andColumn:j] && 
+               ![pieceView.squareLocations squareExistsAtRow:i+1 andColumn:j-1] && 
+               [boardMatrix squareExistsAtRow:origin.y + i+1 andColumn:origin.x + j-1 ofType: currentType]){
+              bottomLeftValid = TRUE;
+            }
+            
+            //check if piece is a bottom right corner
+            if(![pieceView.squareLocations squareExistsAtRow:i andColumn:j+1] && 
+               ![pieceView.squareLocations squareExistsAtRow:i+1 andColumn:j] && 
+               ![pieceView.squareLocations squareExistsAtRow:i+1 andColumn:j+1] && 
+               [boardMatrix squareExistsAtRow:origin.y + i+1 andColumn:origin.x + j+1 ofType: currentType]){
+              bottomRightValid = TRUE;
+            }
+          }          
+        }
+      }
+      valid = valid && ((!topLeftValid || !topRightValid || !bottomLeftValid || !bottomRightValid) && (topLeftValid || topRightValid || bottomLeftValid || bottomRightValid));
+    }
+    
+    return valid;
+  }
+  
+  
+  return NO;
+}
+
+
+
+
+
+
+
+
+
+
+
+#pragma mark User Actions
+
+- (IBAction) rotateRight {
+  [self rotatePieceRight:activePiece]; 
+}
+
+- (void) rotatePieceRight:(PieceView *) piece{
+  
+  [UIView beginAnimations:nil context:NULL];
+  [UIView setAnimationDuration:0.5];
+  [UIView setAnimationCurve:UIViewAnimationCurveEaseInOut];
+  
+  float angle = M_PI;
+  CGAffineTransform transform;
+  switch (piece.orientation) {
+    case NO_CHANGE:
+      transform = CGAffineTransformMakeRotation(angle / 2);
+      [piece setOrientation:ROTATE_ONCE];     
+      break;
+    case ROTATE_ONCE:
+      transform = CGAffineTransformMakeRotation(angle);
+      [piece setOrientation:ROTATE_TWICE];
+      break;
+    case ROTATE_TWICE:
+      transform = CGAffineTransformMakeRotation(angle + (angle / 2));
+      [piece setOrientation:ROTATE_THRICE];
+      break;
+    case ROTATE_THRICE:
+      transform = CGAffineTransformMakeRotation(angle *2);
+      [piece setOrientation:NO_CHANGE];
+      break;
+    default:
+      break;
+  }
+  [piece rotateRight];
+  [piece setTransform:transform];
+  
+  [UIView commitAnimations];
+}
+
+- (IBAction) rotateLeft {
+  [self rotatePieceLeft:activePiece];
+}  
+  
+- (void) rotatePieceLeft: (PieceView *) piece{    
+  [UIView beginAnimations:nil context:NULL];
+  [UIView setAnimationDuration:0.5];
+  [UIView setAnimationCurve:UIViewAnimationCurveEaseInOut];
+  
+  float angle = M_PI;
+  CGAffineTransform transform;
+  switch (piece.orientation) {
+    case NO_CHANGE:
+      transform = CGAffineTransformMakeRotation(-1 * angle / 2);
+      [piece setOrientation:ROTATE_THRICE];
+      break;
+    case ROTATE_ONCE:
+      transform = CGAffineTransformMakeRotation(-1 * 2 * angle);
+      [piece setOrientation:NO_CHANGE];
+      break;
+    case ROTATE_TWICE:
+      transform = CGAffineTransformMakeRotation(-1 * (3 * angle) / 2);
+      [piece setOrientation:ROTATE_ONCE];
+      break;
+    case ROTATE_THRICE:
+      transform = CGAffineTransformMakeRotation(-1 * angle);
+      [piece setOrientation:ROTATE_TWICE];
+      break;
+    default:
+      break;
+  }
+  [piece rotateLeft];
+  [piece setTransform:transform];
+  
+  [UIView commitAnimations]; 
+}
+
+- (IBAction) flipHorizontal {
+  
+  NSLog(@"flipHorizontal");
+}
+
+- (IBAction) flipVertical {
+  
+  NSLog(@"flipVertical");
+}
+
+- (IBAction) passTurn {
+  
+  NSLog(@"passTurn");
+}
+
+- (IBAction) showHint {
+  
+  NSLog(@"showHint");
+}
+
+
+
+
+
+
+
+
+#pragma mark PieceView delegate methods
+
+/*
+ To find the number of available moves, we need to iterate
+ over every unplaced piece. For each one, go through the board,
+ square by square. At every square, see at how many rotations 
+ the piece placement is valid, return a number
+ */
+- (NSMutableArray *) numAvailableMoves{  
+  NSMutableArray *ret = [[NSMutableArray alloc] init];
+  
+  if(NUM_STARTING_PIECES == [unplacedPieces count]){
+    [ret addObject:[NSValue valueWithCGPoint:currentPlayer.startingPosition]];
+    return ret;
+  }
+  
+  int cur_piece,i,j,num_pieces;
+  num_pieces = [unplacedPieces count];
+  
+  int rows = [boardMatrix rows];
+  int cols = [boardMatrix cols];
+  
+  for (cur_piece=0; cur_piece<num_pieces; cur_piece++) {
+    PieceView *piece = [unplacedPieces objectAtIndex:cur_piece];
+    
+    for (i=0; i<rows-[piece.squareLocations rows]; i++) {
+      for (j=0; j<cols-[piece.squareLocations cols]; j++) {
+        if([self piecePlacementIsValid:piece atOrigin:CGPointMake(i, j)]){
+          [ret addObject:[NSValue valueWithCGPoint:CGPointMake(i, j)]];
+        }
+      }
+    }
+  }
+  
+  return ret;
+}
+
+// Reset score, unplaced pieces, clear board, reset piece orientations
+- (void) resetGame{
+  int i;
+  
+  for (i=0; i<[unplacedPieces count]; i++) {
+    [unplacedPieces removeObjectAtIndex:i];     
+  }
+  for (i=0; i<[placedPieces count]; i++) {
+    [placedPieces removeObjectAtIndex:i];     
+  }
+  
+  [self initScoreBoard];
+  [self initCountDownTimer];
+  [self initPieceSelector];
+  [self initGameOptions];
+  [self turnStarted];
+  [boardMatrix clearMatrix];
+  [self rearrangePiecePicker];
+}
+
+- (void) pieceEventHasStarted:(PieceView *)pieceView atLocation:(CGPoint) curLoc{
+  [self setDraggingOffsets:[board convertPoint:curLoc toView:pieceView]];
+}
+
+- (void) pieceEventHasBeenCanceled:(PieceView *)pieceView{
+  if (pieceView.isPlaced) {
+    return;
+  }
+  
+  CGRect newFrame = CGRectMake((board.frame.size.width-pieceView.frame.size.width) / 2, 
+                               (board.frame.size.height - pieceView.frame.size.height) /2 , 
+                               pieceView.frame.size.width, pieceView.frame.size.height);
+  
+  [pieceView retain];
+  [pieceView removeFromSuperview];
+  [board bringSubviewToFront:placingPieceShadow];
+  [board addSubview:pieceView];
+  
+  if([pieceView isPicked] == FALSE){
+    [pieceView setFrame:newFrame];
+    [self pieceIsBeingPlaced:pieceView];
+  }
+  else if(state == PLACING_PIECE && !pieceHasMoved) {
+    [self pieceHasBeenPlaced:pieceView];
+  }
+  
+  pieceHasMoved = FALSE;
+  [pieceView release];
+
+  if([placedPieces count] == 1){
+    UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Game Over :(" message:@"You have run out of moves."  delegate:self cancelButtonTitle:@"Play Again" otherButtonTitles: @"Cancel", nil];
+		[alert show];
+		[alert release];
+  }
+  
+  if(![[self numAvailableMoves] count]){
+    UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Game Over :(" message:@"You have run out of moves."  delegate:self cancelButtonTitle:@"Play Again" otherButtonTitles: @"Cancel", nil];
+		[alert show];
+		[alert release];
+  } else {
+    NSLog(@"You can still make moves");
+  }
+
+}
+
+- (void)alertView:(UIAlertView *)alertView didDismissWithButtonIndex:(NSInteger)buttonIndex{
+  [self resetGame];
+  return;
+}
+
+
+- (void) pieceIsBeingPlaced:(PieceView *)pieceView{
+  [pieceScrollView setUserInteractionEnabled:NO];
+  [self showOrientationEditor];
+  pieceView.isPicked = TRUE;
+  
+  [pieceView setSideLength:REGULAR_PIECE_LENGTH];
+  if([pieceView style] == SMALL_ORANGE_PIECE){
+    [pieceView setStyle:ORANGE_PIECE];
+  } else if ([pieceView style] == SMALL_PURPLE_PIECE) {
+    [pieceView setStyle:PURPLE_PIECE];
+  }
+  [pieceView updateFrame];
+  [pieceView setNeedsDisplay];
+  
+  [UIView beginAnimations:nil context:NULL];
+  [UIView setAnimationDuration:0.3];
+  [UIView setAnimationRepeatAutoreverses:YES];
+  [UIView setAnimationRepeatCount:5000.0];
+  [UIView setAnimationCurve:UIViewAnimationCurveEaseInOut];
+  [pieceView setAlpha:0.3f];
+  [UIView commitAnimations];
+  
+  activePiece = pieceView;
+  state = PLACING_PIECE;
+}
+
+- (void) pieceHasBeenPlaced:(PieceView *)pieceView{
+  int i;
+  CGPoint origin = [self getSnappedOriginForPiece:pieceView atOrigin:pieceView.frame.origin andReturnSquareIndex:YES andIncludeDisplacement:NO];
+  
+  if(![self piecePlacementIsValid:pieceView atOrigin:origin]){
+    [self alertUserOfBadMove];
+    return;
+  }
+  
+  int count = [self.unplacedPieces count];
+  
+  for (i=0; i<count; i++) {
+    if([unplacedPieces objectAtIndex:i] == activePiece){
+      [self.unplacedPieces removeObjectAtIndex:i];     
+      break;
+    }
+  }
+
+  [activePiece setUserInteractionEnabled:NO];
+  [self rearrangePiecePicker];
+  
+  [UIView beginAnimations:nil context:NULL];
+  [UIView setAnimationDuration:0.5];
+  [UIView setAnimationCurve:UIViewAnimationCurveEaseInOut];
+  [pieceView setAlpha:1.0f];
+  [UIView commitAnimations];
+  
+  [pieceScrollView setUserInteractionEnabled:YES];
+  [pieceView setIsPlaced:YES];
+  activePiece = nil;
+  state = NORMAL;
+  
+  [placedPieces addObject:pieceView];
+  [pieceView release];
+  int rows = [pieceView.squareLocations getMatrixRows];
+  int cols = [pieceView.squareLocations getMatrixColumns];
+  int j;
+  
+  for(i=0;i<rows;i++){
+    for (j=0; j<cols; j++) {
+      if(currentPlayer == orangePlayer && [pieceView.squareLocations squareExistsAtRow:i andColumn:j]){
+        [boardMatrix setSquareAtRow:origin.y + i andColumn:origin.x + j toValue:ORANGE_PIECE]; 
+      }
+    }
+  }
+  
+  [self hideOrientationEditor];
+  
+  orangeScore += pieceView.numSquares;
+  [[scoreBoard orangeScore] setText:[NSString stringWithFormat:@"%d",orangeScore]];
+}
+
+- (void) pieceHasBeenMoved:(PieceView *)pieceView withCurLocation: (CGPoint) curLoc andPrevLocation: (CGPoint) prevLoc{
+  if (pieceView.isPlaced) {
+    return;
+  }
+  
+  CGPoint newPos = [self getSnappedOriginForPiece:pieceView atOrigin:curLoc];
+
+  if(newPos.x != pieceView.frame.origin.x && newPos.y != pieceView.frame.origin.y){
+    pieceHasMoved = TRUE;
+  }
+  CGRect newFrame = CGRectMake(newPos.x, newPos.y, pieceView.frame.size.width, pieceView.frame.size.height);
+  [pieceView setFrame:newFrame];
+  
+}
+
+- (void) pieceEventHasEnded:(PieceView *)pieceView{
+  if(state == PLACING_PIECE && ![pieceView isPlaced])
+    [self pieceEventHasBeenCanceled:pieceView];
+}
+
+
+- (void) touchesBegan:(NSSet *)touches withEvent:(UIEvent *)event{
+  UITouch *touch = [touches anyObject];
+  
+  self.pointOfOrigin = [touch locationInView:[self board]];
+  self.originalPieceLocation = activePiece.frame.origin;
+}
+
+- (void) touchesEnded:(NSSet *)touches withEvent:(UIEvent *)event{
+  if(state == PLACING_PIECE){
+    [self pieceEventHasBeenCanceled:activePiece]; 
+  }
+}
+
+- (void) touchesMoved:(NSSet *)touches withEvent:(UIEvent *)event{
+  [activePiece setCleanTouch: NO];
+  UITouch *touch = [touches anyObject];
+  
+  CGPoint curLoc = [touch locationInView:[self board]];
+  CGPoint newPieceLocation = originalPieceLocation;
+  
+  newPieceLocation.x += curLoc.x - pointOfOrigin.x;
+  newPieceLocation.y += curLoc.y - pointOfOrigin.y;
+  
+  if (activePiece.isPlaced) {
+    return;
+  }
+  
+  CGPoint newPos = [self getSnappedOriginForPiece:activePiece atOrigin:newPieceLocation andReturnSquareIndex:NO andIncludeDisplacement:NO];
+  
+  if(newPos.x != activePiece.frame.origin.x || newPos.y != activePiece.frame.origin.y){
+    pieceHasMoved = TRUE;
+  }
+  [activePiece setFrame:CGRectMake(newPos.x, newPos.y, activePiece.frame.size.width, activePiece.frame.size.height)];
+  
+}
+
+
+
+
+
+- (void) turnStarted{
+  [currentPlayer takeTurn];
+}
+
+- (void) turnEnded:(BlokusPlayer *)player{
+  
+  if(currentPlayer == orangePlayer){
+    NSLog(@"Orange ended his turn");
+    [pieceScrollView setUserInteractionEnabled:NO];
+    currentPlayer = purplePlayer;
+  } else {
+    NSLog(@"Purple ended his turn");
+    [pieceScrollView setUserInteractionEnabled:YES];
+    currentPlayer = orangePlayer;
+  }
+
+  
+  [self turnStarted];
+}
+
+- (void)didReceiveMemoryWarning {
+	// Releases the view if it doesn't have a superview.
+  [super didReceiveMemoryWarning];
+	
+	// Release any cached data, images, etc that aren't in use.
+}
+
+- (void)viewDidUnload {
+	// Release any retained subviews of the main view.
+	// e.g. self.myOutlet = nil;
+}
+
+- (void)dealloc {
+  [super dealloc];
+}
+
+@end

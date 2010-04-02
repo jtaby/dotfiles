@@ -1,0 +1,238 @@
+#!/usr/bin/python
+import reportlab.rl_config 
+
+from reportlab.pdfbase import pdfmetrics 
+from reportlab.pdfbase.ttfonts import TTFont 
+from reportlab.lib.colors import HexColor
+
+from reportlab.pdfgen import canvas 
+from reportlab.lib.units import inch 
+
+from reportlab.lib.pagesizes import A4,letter
+
+import datetime, calendar
+import MonthBox
+
+reportlab.rl_config.warnOnMissingFontGlyphs = 0
+
+pdfmetrics.registerFont(TTFont('LucidaGrande', 'LucidaGrande.ttc'))
+
+
+# Global constants
+IMAGE_HEIGHT = 11 * inch
+IMAGE_WIDTH = 8.5 * inch
+Y = 8 * inch
+
+PAGE_MARGIN_TOP = 0.5*inch
+PAGE_MARGIN_BOTTOM = 0.5*inch
+PAGE_MARGIN_LEFT = 0.6*inch
+PAGE_MARGIN_RIGHT = 0.5*inch
+
+CONTENT_HEADER_HEIGHT = 4 * inch
+MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December']
+WEEKDAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']
+
+NUM_WEEKS = 6
+NUM_DAYS_PER_WEEK = 7
+DAY_BOX_WIDTH = IMAGE_WIDTH / NUM_DAYS_PER_WEEK
+DAY_BOX_HEIGHT = (IMAGE_HEIGHT - CONTENT_HEADER_HEIGHT) / NUM_WEEKS
+DAY_BOX_PADDING = 0.5 * inch
+
+# ------------------------------------------
+# Global objects
+c = canvas.Canvas("hello.pdf",pagesize=(841.89,595.27)) 
+# c.rotate(90)
+# c.translate(0,11.5 * inch) 
+
+
+# ------------------------------------------
+# Fixture data
+
+CALENDARS = ['CSE Scholars','Personal','School Work']
+CALENDAR_COLORS = ['#FF0000','#00FF00','#FF9900']
+
+CALENDAR_DATA = {
+  2010: {
+    2: {
+      6: [
+        {
+          'text': 'This is a test',
+          'calendar': 0,
+          'starttime': '12:00'
+        },
+        {
+          'text': 'This is another test',
+          'calendar': 1,
+          'starttime': '2:00'
+        }
+      ],
+      18: [
+        {
+          'text': 'This is a test',
+          'calendar': 0,
+          'starttime': '12:00'
+        },
+        {
+          'text': 'This is another test',
+          'calendar': 1,
+          'starttime': '2:00'
+        }
+      ],
+      23: [
+        {
+          'text': 'This is a test',
+          'calendar': 2,
+          'starttime': '12:00'
+        },
+        {
+          'text': 'This is another test',
+          'calendar': 1,
+          'starttime': '2:00'
+        }
+      ]
+    }
+  }
+}  
+
+# ------------------------------------------
+# Drawing the header
+cur_date = datetime.datetime.now()
+month = cur_date.month
+year  = cur_date.year
+
+# font = ImageFont.truetype("LucidaSansStd-Bold.otf",90);
+c.setFont("LucidaGrande", 23) 
+c.drawString(PAGE_MARGIN_LEFT,Y - PAGE_MARGIN_TOP, MONTH_NAMES[month - 1]+' '+str(year))
+
+
+# ------------------------------------------
+# Drawing the calendar headers
+c.setFont("LucidaGrande", 7) 
+
+for i in range(len(CALENDARS)):
+  top_offset = Y - (PAGE_MARGIN_TOP + 30 + (10 * i))
+  left_offset = PAGE_MARGIN_LEFT 
+
+  c.setFillColor(HexColor('#000000')) 
+  c.drawString(left_offset + 15,top_offset,CALENDARS[i])
+
+  c.setFillColor(HexColor(CALENDAR_COLORS[i % len(CALENDAR_COLORS)])) 
+  c.rect(left_offset,top_offset,11,5,stroke=0, fill=1) 
+
+
+# ------------------------------------------
+# Drawing the calendar canvas
+
+day_range = calendar.monthrange(year,month) 
+
+# Do I need to figure out the information for the previous month?
+prev_month_day_range = (0,0)
+prev_month_days_to_show = 0
+
+if(day_range[0] != 6):
+  if(month == 1):
+    new_month = 12
+    new_year = year - 1
+  elif(month == 12):
+    new_month = 1
+    new_year = year + 1
+  else:
+    new_month = month-1
+    new_year = year
+
+  prev_month_day_range = calendar.monthrange(new_year,new_month)
+  prev_month_days_to_show = ((day_range[0] + 1) % 7)
+
+# Don't show a full row of the next month
+if(((NUM_WEEKS * NUM_DAYS_PER_WEEK) - (prev_month_days_to_show + day_range[1])) > 6):
+  PAGE_MARGIN_BOTTOM = 0
+  NUM_WEEKS = 5
+  DAY_BOX_HEIGHT = (IMAGE_HEIGHT - CONTENT_HEADER_HEIGHT) / NUM_WEEKS
+
+number_of_days_in_month = day_range[1]
+rowday_of_first = day_range[0]
+
+# Draw the day names
+for day in range(NUM_DAYS_PER_WEEK):
+
+  color = "#000000"  
+  text_size = draw.textsize(WEEKDAY_NAMES[day],font=font)
+
+  centering_offset = (DAY_BOX_WIDTH - text_size[0]) / 2
+
+  left_offset = PAGE_MARGIN_LEFT + (DAY_BOX_WIDTH * day) - centering_offset
+  top_offset = PAGE_MARGIN_TOP + 390 + (DAY_BOX_HEIGHT * 0)
+
+  draw.text((left_offset + DAY_BOX_WIDTH - text_size[0],top_offset + DAY_BOX_PADDING),WEEKDAY_NAMES[day],font=font, fill=color)
+
+# # Draw the main contents of the calendar
+# for row in range(NUM_WEEKS):
+#   for col in range(NUM_DAYS_PER_WEEK):
+# 
+#     box_in_grid = (NUM_DAYS_PER_WEEK * row) + (col+1)
+# 
+#     top_offset = PAGE_MARGIN_TOP + CONTENT_HEADER_HEIGHT + (DAY_BOX_HEIGHT * row)
+#     left_offset = PAGE_MARGIN_LEFT + (DAY_BOX_WIDTH * col)
+# 
+#     # We're in the previous month's range
+#     if(box_in_grid <= day_range[0] + 1 and (day_range[0] + 1) % 7 != 0):
+#       box_in_grid = col
+#       greyed_out = True
+#       color = "#b5b5b5"  
+#       day_number = prev_month_day_range[1] - (prev_month_days_to_show - (box_in_grid + 1)) 
+# 
+#       draw.rectangle((left_offset,top_offset,left_offset + DAY_BOX_WIDTH,top_offset + DAY_BOX_HEIGHT),outline=color)
+#     # We're in the next month's range
+#     elif(box_in_grid > (number_of_days_in_month + prev_month_days_to_show)):
+#       greyed_out = True
+#       color = "#b5b5b5"  
+#       day_number = (box_in_grid - (prev_month_days_to_show + day_range[1]))
+#       left_offset = PAGE_MARGIN_LEFT + (DAY_BOX_WIDTH * col-1)
+# 
+#       draw.line((left_offset,top_offset,left_offset, top_offset + DAY_BOX_HEIGHT),fill=color)
+#     # We're in the current month
+#     else: 
+#       greyed_out = False
+#       color = "#000000"  
+#       day_number = box_in_grid - prev_month_days_to_show
+# 
+#       draw.rectangle((left_offset,top_offset,left_offset + DAY_BOX_WIDTH,top_offset + DAY_BOX_HEIGHT),outline=color)
+# 
+#     text_size = draw.textsize(str(day_number),font=font)
+#     draw.text((left_offset + DAY_BOX_WIDTH - text_size[0] - DAY_BOX_PADDING,top_offset + DAY_BOX_PADDING),str(day_number),font=font, fill=color)
+# 
+#     if(CALENDAR_DATA[year] and CALENDAR_DATA[year][month] and CALENDAR_DATA[year][month][day]):
+#       day_events = CALENDAR_DATA[year][month][day]
+#     else: 
+#       continue
+# 
+#     box_obj = MonthBox.MonthViewBox(draw,top_offset,left_offset,DAY_BOX_HEIGHT,DAY_BOX_WIDTH)
+# #    box_obj.drawEventInfo(day_events,color,font)
+# 
+# 
+# draw.rectangle((PAGE_MARGIN_LEFT, #left edge \
+#                 PAGE_MARGIN_TOP+CONTENT_HEADER_HEIGHT, #top edge \
+#                 (DAY_BOX_WIDTH * NUM_DAYS_PER_WEEK)+PAGE_MARGIN_LEFT, #right edge \
+#                 PAGE_MARGIN_TOP+CONTENT_HEADER_HEIGHT + (DAY_BOX_HEIGHT * NUM_WEEKS)), #bottom edge \
+#                 outline=1)
+# 
+# move the origin up and to the left 
+# c.translate(inch,inch) 
+# define a large font 
+# c.setFont("Helvetica", 14) 
+# choose some colors
+# c.setStrokeColorRGB(0.2,0.5,0.3) 
+# c.setFillColorRGB(1,0,1) 
+# draw some lines 
+# c.line(0,0,0,1.7*inch) 
+# c.line(0,0,1*inch,0)
+# draw a rectangle 
+# c.rect(0.2*inch,0.2*inch,1*inch,1.5*inch, fill=1) 
+# make text go straight up 
+# c.rotate(90) 
+# change color 
+# c.setFillColorRGB(0,0,0.77) 
+# say hello (note after rotate the y coord needs to be negative!) 
+# c.drawString(0.3*inch, -inch, "Hello World")
+
+c.save()

@@ -1,0 +1,330 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <limits.h>
+#include <math.h>
+
+#define NUMMEMORY 65536 /* maximum number of words in memory */
+#define NUMREGS 8 /* number of machine registers */
+#define MAXLINELENGTH 1000
+#define MAXCACHE 256
+
+typedef struct stateStruct {
+    int pc;
+    int mem[NUMMEMORY];
+    int reg[NUMREGS];
+    int numMemory;
+} stateType;
+
+
+
+typedef struct blockStruct {
+	int valid;
+	int tag;
+	int LRU;
+	int dirty;
+} blockType;
+
+typedef struct cacheStruct {
+	int blockSizeInWords;
+	int numberOfSets;
+	int blocksPerSet;
+	
+	int blockOffset;
+	int setIndexSize;
+	
+	int size;
+	int curSize;
+	int counter;
+	
+	blockType sets[MAXCACHE][MAXCACHE];
+	int blockSizes[MAXCACHE];
+} cacheType;
+
+
+enum OPCODE_E {
+	ADD,NAND,LW,SW,BEQ,JALR,HALT,NOOP
+};
+
+enum actionType {
+	cacheToProcessor, processorToCache, memoryToCache, cacheToMemory, cacheToNowhere
+};
+
+void printAction(int address, int size, enum actionType type);
+void checkCache(cacheType *cache, int address, int isSW);
+
+void executeRTypeCommand(int opcode, int arg0, int arg1, int destReg, stateType *state){
+	if(opcode == ADD){
+		state->reg[destReg] = state->reg[arg0] + state->reg[arg1];
+	} else if(opcode == NAND){
+		state->reg[destReg] = ~(state->reg[arg0] & state->reg[arg1]);
+	}
+}
+void executeITypeCommand(int opcode, int arg0, int arg1, int offsetField, stateType *state,cacheType *cache){
+	int a = state->reg[arg0];
+	int b = state->reg[arg1];
+	int source = a+offsetField;
+	
+	if(opcode == LW){
+		checkCache(cache,a+offsetField,0);
+		if(source < 0 || source > NUMMEMORY){
+			printf("Out of bounds error.\n");
+			exit(1);
+		}
+		
+		state->reg[arg1] = state->mem[a+offsetField];
+		
+	} else if(opcode == SW){
+		checkCache(cache,a+offsetField,1);
+		
+		if(source < 0 || source > NUMMEMORY){
+			printf("Out of bounds error.\n");
+			exit(1);
+		}
+		
+		state->mem[a+offsetField] = b;
+		
+	} else if(opcode == BEQ){
+		if(a == b){
+			state->pc += offsetField;
+		}
+	}	
+}
+void executeJTypeCommand(int opcode, int arg0, int arg1, stateType *state){
+	state->reg[arg1] = state->pc + 1;
+	state->pc = state->reg[arg0]-1; // the -1 is because we automatically 
+	// increment PC at end of loop
+}
+void executeOTypeCommand(int opcode, int num_instructions, stateType *state){
+	if(opcode == HALT){	  		
+		state->pc++;
+		exit(0);
+	}
+}
+
+int convertNum(int num){
+	if(num & (1<< 15))
+	{
+		num-=(1 << 16);
+	}
+	return (num);
+}
+
+void checkCache(cacheType *cache, int pc, int isSW){
+	
+	int setIndex;
+	int tagIndex;
+	int blockLoc;
+	int i = 0;
+	
+	setIndex = (pc/cache->blockSizeInWords) % cache->numberOfSets;
+	blockLoc = pc & (((int) pow(2,cache->blockOffset)) -  1);
+	tagIndex = pc - blockLoc;
+
+	// try to find the tag
+	blockLoc = -1;	
+	for(; i < cache->blockSizes[setIndex]; i++){
+		if(cache->sets[setIndex][i].tag == tagIndex){
+			blockLoc = i;
+		}
+	}
+
+	// tag not found :(
+	if(blockLoc == -1){
+
+		enum actionType type;
+		int newBlockPos = 0;
+		int i;
+		
+		// Cache is not full
+		if(cache->blockSizes[setIndex] != cache->blocksPerSet){
+			cache->blockSizes[setIndex]++;
+			for(i = 0; i < cache->blocksPerSet; i++){
+				if(!cache->sets[setIndex][i].valid){
+					newBlockPos = i;
+					break;
+				}
+			}
+		}
+		//cache is full
+		else{
+			int min = INT_MAX;
+			for(i = 0; i < cache->blocksPerSet; i++){
+				if(min > cache->sets[setIndex][i].LRU){
+					min = cache->sets[setIndex][i].LRU;
+					newBlockPos = i;
+				}
+			}
+			if(!cache->sets[setIndex][newBlockPos].dirty){
+				type = cacheToNowhere;
+			}
+			else{
+				cache->sets[setIndex][newBlockPos].dirty = 0;
+				type = cacheToMemory;
+			}
+			printAction(cache->sets[setIndex][newBlockPos].tag, cache->blockSizeInWords, type);
+		}
+
+		cache->sets[setIndex][newBlockPos].dirty = 0;
+		cache->sets[setIndex][newBlockPos].valid = 1;
+		cache->sets[setIndex][newBlockPos].LRU   = cache->counter;
+		cache->sets[setIndex][newBlockPos].tag   = tagIndex;
+		cache->counter++;
+		
+		printAction(tagIndex, cache->blockSizeInWords, memoryToCache);
+		blockLoc = newBlockPos;		
+	}
+	// tag found, update the LRU
+	else{
+		cache->sets[setIndex][blockLoc].LRU = cache->counter;
+		cache->counter++;
+	}
+	
+	// If we're writing into it, mark it as dirty
+	if(isSW){
+		cache->sets[setIndex][blockLoc].dirty = 1;
+		printAction(pc, 1, processorToCache);
+	} else {
+		printAction(pc, 1, cacheToProcessor);
+	}
+
+	
+}
+
+void initializeCache(cacheType *cache, char *argv[]){
+	int j=0,
+		k=0;
+	
+	for(j = 0; j < MAXCACHE; j++){
+		cache->blockSizes[j] = 0;
+		for(k = 0; k < MAXCACHE; k++){
+			cache->sets[j][k].dirty = 0;
+			cache->sets[j][k].tag = 0;
+			cache->sets[j][k].valid = 0;
+		}
+	}
+	
+	cache->blockSizeInWords = atoi(argv[2]);
+	cache->numberOfSets = atoi(argv[3]);
+	cache->blocksPerSet = atoi(argv[4]);
+	cache->curSize = 0;
+	cache->counter = 0;
+	
+	cache->blockOffset = (int)(log(cache->blockSizeInWords)/log(2.0));
+	cache->setIndexSize = (int)(log(cache->numberOfSets)/log(2.0));	
+	cache->size = cache->blockSizeInWords * cache->numberOfSets * cache->blocksPerSet;
+	
+}
+
+int main(int argc, char *argv[]){
+	char line[MAXLINELENGTH];
+	stateType state;
+	cacheType cache;
+	FILE *filePtr;
+	int i=0,
+	opcode=0,
+	instruction=0,
+	arg0=0,
+	arg1=0,
+	arg2=0;
+	
+	if (argc != 5) {
+		printf("error: usage: %s <machine-code file>\n", argv[0]);
+		exit(1);
+	}
+	
+	initializeCache(&cache,argv);
+	
+	filePtr = fopen(argv[1], "r");
+	if (filePtr == NULL) {
+		printf("error: can't open file %s", argv[1]);
+		perror("fopen");
+		exit(1);
+	}
+	
+	for(i=0;i<NUMREGS;i++){
+		state.reg[i] = 0;
+	}
+	
+	for(i=0;i<NUMMEMORY;i++){
+		state.mem[i] = 0;
+	}
+	
+	/* read in the entire machine-code file into memory */
+	for (state.numMemory = 0; fgets(line, MAXLINELENGTH, filePtr) != NULL;
+		 state.numMemory++) {
+		if (sscanf(line, "%d", state.mem+state.numMemory) != 1) {
+			printf("error in reading address %d\n", state.numMemory);
+			exit(1);
+		}
+
+	}
+	
+	i=0;
+	while(1){
+		if(state.pc < 0 || state.pc > NUMMEMORY){
+			printf("Out of bounds error.\n");
+			exit(1);
+		}
+		
+		instruction = state.mem[state.pc];
+		opcode = instruction >> 22;
+		arg0   = (instruction >> 19) & 7;
+		arg1   = (instruction >> 16) & 7;
+
+		checkCache(&cache, state.pc, 0);
+
+		if(opcode == ADD || opcode == NAND){
+			//R-type instructions
+			arg2 = instruction & 7;
+			executeRTypeCommand(opcode,arg0,arg1,arg2,&state);
+		} else if (opcode == LW || opcode == SW || opcode == BEQ) {
+			//I-type instructions
+			arg2 = instruction & 0x0000FFFF;
+            arg2 = convertNum(arg2);
+			
+			executeITypeCommand(opcode,arg0,arg1,arg2,&state,&cache);
+		} else if (opcode == JALR) {
+			//J-type instructions
+			executeJTypeCommand(opcode,arg0,arg1,&state);
+		} else if (opcode == HALT || opcode == NOOP) {
+			//O-type instructions
+			executeOTypeCommand(opcode,i,&state);
+		} else {
+			printf("Unknown opcode.\n");
+			exit(1);  
+		}
+		
+		state.reg[0] = 0;
+		state.pc++;
+		i++;
+	}
+    return(0);
+}
+
+/*
+ * Log the specifics of each cache action.
+ *
+ * address is the starting word address of the range of data being transferred.
+ * size is the size of the range of data being transferred.
+ * type specifies the source and destination of the data being transferred.
+ *     cacheToProcessor: reading data from the cache to the processor
+ *     processorToCache: writing data from the processor to the cache
+ *     memoryToCache: reading data from the memory to the cache
+ *     cacheToMemory: evicting cache data by writing it to the memory
+ *     cacheToNowhere: evicting cache data by throwing it away
+ */
+void printAction(int address, int size, enum actionType type){
+    printf("@@@ transferring word [%d-%d] ", address, address + size - 1);
+    if (type == cacheToProcessor) {
+        printf("from the cache to the processor\n");
+    } else if (type == processorToCache) {
+        printf("from the processor to the cache\n");
+    } else if (type == memoryToCache) {
+        printf("from the memory to the cache\n");
+    } else if (type == cacheToMemory) {
+        printf("from the cache to the memory\n");
+    } else if (type == cacheToNowhere) {
+        printf("from the cache to nowhere\n");
+    }
+}

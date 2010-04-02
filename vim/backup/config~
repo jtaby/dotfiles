@@ -1,0 +1,9 @@
+[core]
+	repositoryformatversion = 0
+	filemode = true
+	bare = false
+	logallrefupdates = true
+	ignorecase = true
+[remote "orgiin"]
+	url = git@192.168.1.100:you_queue
+	fetch = +refs/heads/*:refs/remotes/orgiin/*

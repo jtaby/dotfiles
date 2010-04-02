@@ -1,0 +1,31 @@
+// ==========================================================================
+// Project:   YouQueue
+// Copyright: ©2009 My Company, Inc.
+// ==========================================================================
+/*globals YouQueue */
+
+/** @namespace
+
+  My cool new app.  Describe your application.
+  
+  @extends SC.Object
+*/
+require('data_sources/rails');
+
+YouQueue = SC.Object.create(
+  /** @scope YouQueue.prototype */ {
+
+  NAMESPACE: 'YouQueue',
+  VERSION: '0.1.1',
+
+  // This is your application store.  You will use this store to access all
+  // of your model data.  You can also set a data source on this store to
+  // connect to a backend server.  The default setup below connects the store
+  // to any fixtures you define.
+  store: SC.Store.create({ 
+				   commitRecordsAutomatically: YES
+				 }).from('SC.RailsDataSource')
+  
+  // TODO: Add global constants or singleton objects needed by your app here.
+
+}) ;

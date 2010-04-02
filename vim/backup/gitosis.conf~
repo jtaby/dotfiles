@@ -1,0 +1,10 @@
+[gitosis]
+
+[group gitosis-admin]
+writable = gitosis-admin 
+members = majd@taby.apple.com
+
+[group school]
+writable = gitem
+members = majd@taby.apple.com
+

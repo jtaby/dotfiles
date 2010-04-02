@@ -1,0 +1,392 @@
+#include <stdio.h>
+#include <string.h>
+#include <math.h>
+#include <limits.h>
+#include <stdlib.h>
+
+#define NUMMEMORY 65536 /* maximum number of words in memory */
+#define NUMREGS 8 /* number of machine registers */
+#define MAXLINELENGTH 1000
+#define MAXCACHE 256
+
+
+#define ADD 0
+#define NAND 1
+#define LW 2
+#define SW 3
+#define BEQ 4
+#define JALR 5 /* JALR will not implemented for Project 3 */
+#define HALT 6
+#define NOOP 7
+#define FETCH 8
+
+typedef struct blockStruct {
+	int dirty;
+	int valid;
+	int LRU;
+	int tag;
+}blockType;
+
+typedef struct cacheStruct {
+	int numberOfSets;
+	int blocksPerSet;
+	int blockSizeInWords;
+
+	int cacheSize;
+	int currentCacheSize;
+	
+	int blockOffset;
+	int setIndexSize;
+	int tagSize;
+	int	counter;
+
+	blockType sets[MAXCACHE][MAXCACHE];
+	int blockSizes[MAXCACHE];
+}cacheType;
+
+
+typedef struct stateStruct {
+    int pc;
+    int mem[NUMMEMORY];
+    int reg[NUMREGS];
+    int numMemory;
+
+	cacheType cache;
+} stateType;
+
+//void printState(stateType *);
+int convertNum(int num);
+
+void cacheSim(int address, int opcode, stateType * state);
+
+enum actionType
+        {cacheToProcessor, processorToCache, memoryToCache, cacheToMemory,
+        cacheToNowhere};
+/*
+ * Log the specifics of each cache action.
+ *
+ * address is the starting word address of the range of data being transferred.
+ * size is the size of the range of data being transferred.
+ * type specifies the source and destination of the data being transferred.
+ *     cacheToProcessor: reading data from the cache to the processor
+ *     processorToCache: writing data from the processor to the cache
+ *     memoryToCache: reading data from the memory to the cache
+ *     cacheToMemory: evicting cache data by writing it to the memory
+ *     cacheToNowhere: evicting cache data by throwing it away
+ */
+void
+printAction(int address, int size, enum actionType type)
+{
+    printf("@@@ transferring word [%d-%d] ", address, address + size - 1);
+    if (type == cacheToProcessor) {
+        printf("from the cache to the processor\n");
+    } else if (type == processorToCache) {
+        printf("from the processor to the cache\n");
+    } else if (type == memoryToCache) {
+        printf("from the memory to the cache\n");
+    } else if (type == cacheToMemory) {
+        printf("from the cache to the memory\n");
+    } else if (type == cacheToNowhere) {
+        printf("from the cache to nowhere\n");
+    }
+}
+
+
+void Rtype(int opcode, int machineCode, stateType * state)
+{
+	int regA;
+	int regB;
+	int dest;
+
+	regA = ((machineCode >> 19) & 7);
+	regB = ((machineCode >> 16) & 7);
+	dest = (machineCode & 7);
+
+	if(opcode == 0)
+	{
+		state->reg[dest] = state->reg[regA] + state->reg[regB];
+	}
+	else
+	{
+		state->reg[dest] = ~(state->reg[regA] & state->reg[regB]);
+	}
+	state->pc++;
+}
+
+void Itype(int opcode, int machineCode, stateType * state)
+{
+	int regA;
+	int regB;
+	int offsetField;
+
+	regA = ((machineCode >> 19) & 7);
+	regB = ((machineCode >> 16) & 7);
+	offsetField = (machineCode & 0x0000FFFF);
+	if( (offsetField & 0x8000) != 0)
+	{
+		offsetField = convertNum(offsetField);
+	}
+
+	
+	if( opcode ==2)
+	{
+		cacheSim((state->reg[regA] + offsetField), LW, state);
+		state->reg[regB] = state->mem[state->reg[regA] + offsetField];
+		state->pc++;
+	}
+	else if(opcode == 3)
+	{
+		cacheSim((state->reg[regA] + offsetField), SW, state);
+		state->mem[state->reg[regA] + offsetField] = state->reg[regB];
+		state->pc++;
+	}
+	else
+	{
+		if(state->reg[regA] == state->reg[regB])
+		{
+			state->pc = state->pc + 1 + offsetField;
+		}
+		else
+		{
+			state->pc++;
+		}
+	}
+	
+}
+
+void Jtype(int opcode, int machineCode, stateType * state)
+{
+	int regA;
+	int regB;
+	
+	regA = ((machineCode >> 19) & 7);
+	regB = ((machineCode >> 16) & 7);
+
+	state->reg[regB] = state->pc + 1;
+	state->pc = state->reg[regA];
+}
+
+int bitAnder(int size)
+{
+	int x = 1;
+	int y = 0;
+	if(size == 0)
+	{
+		return size;
+	}
+	if(size == 1)
+	{
+		return x;
+	}
+	for(y = 0; y < (size-1); y++)
+	{
+		x = x << 1;
+		x++;
+	}
+	return x;
+}
+int findTag(stateType * state, int tag, int setIndex)
+{
+	int x = 0;
+	for(x = 0; x < state->cache.blockSizes[setIndex]; x++)
+	{
+		if(state->cache.sets[setIndex][x].tag == tag)
+		{
+			return x;
+		}
+	}
+	return -1;
+}
+
+int insertBlock(stateType * state, int setIndex, int newTag)
+{
+	enum actionType type;
+	int newBlockPos = 0;
+	int x;
+	int blockAdded = 0;
+	if(state->cache.blockSizes[setIndex] == state->cache.blocksPerSet)
+	{
+		int minLRU = INT_MAX;
+		for(x = 0; x < state->cache.blocksPerSet; x++)
+		{
+			if(minLRU > state->cache.sets[setIndex][x].LRU)
+			{
+				minLRU = state->cache.sets[setIndex][x].LRU;
+				newBlockPos = x;
+			}
+		}
+		if(state->cache.sets[setIndex][newBlockPos].dirty)
+		{
+			type = cacheToMemory;
+			state->cache.sets[setIndex][newBlockPos].dirty = 0;
+		}
+		else
+		{
+			type = cacheToNowhere;
+		}
+		printAction(state->cache.sets[setIndex][newBlockPos].tag, state->cache.blockSizeInWords, type);
+	}
+	else
+	{
+		state->cache.blockSizes[setIndex]++;
+		for(x = 0; x < state->cache.blocksPerSet; x++)
+		{
+			if(!state->cache.sets[setIndex][x].valid)
+			{
+				newBlockPos = x;
+				break;
+			}
+		}
+	}
+	state->cache.sets[setIndex][newBlockPos].LRU = state->cache.counter;
+	state->cache.counter++;
+	state->cache.sets[setIndex][newBlockPos].dirty = 0;
+	state->cache.sets[setIndex][newBlockPos].tag = newTag;
+	state->cache.sets[setIndex][newBlockPos].valid = 1;
+	
+	type = memoryToCache;
+	printAction(newTag, state->cache.blockSizeInWords, type);
+	return newBlockPos;
+}
+void cacheSim(int address, int opcode, stateType * state)
+{
+	int setIndex;
+	int blockIndex;
+	int tagIndex;
+	int blockLoc;
+	int x;
+	enum actionType type;
+	setIndex =  (address/state->cache.blockSizeInWords)% state->cache.numberOfSets;
+	blockLoc = address & bitAnder(state->cache.blockOffset);
+	tagIndex = address - blockLoc;
+	//setIndex = (address >> state->cache.blockOffset) & bitAnder(state->cache.setIndexSize);
+	//blockIndex = address & bitAnder(state->cache.blockOffset);
+	//tagIndex = address >> (state->cache.blockOffset + state->cache.setIndexSize) - state->cache.blockOffset;
+	blockLoc = findTag(state, tagIndex, setIndex);
+	if(blockLoc == -1)
+	{
+		blockLoc = insertBlock(state, setIndex, tagIndex);
+	}
+	else
+	{
+		state->cache.sets[setIndex][blockLoc].LRU = state->cache.counter;
+		state->cache.counter++;
+	}
+	if(opcode == SW)
+	{
+		state->cache.sets[setIndex][blockLoc].dirty = 1;
+		type = processorToCache;
+	}
+	else
+	{
+		type = cacheToProcessor;
+	}
+	printAction(address, 1, type);
+}
+
+int
+main(int argc, char *argv[])
+{
+    char line[MAXLINELENGTH];
+    stateType state;
+    FILE *filePtr;
+	int x, y, z;
+	int numInstructions;
+	numInstructions = 0;
+    if (argc != 5) {
+		printf("error: usage: %s <machine-code file>\n", argv[0]);
+		exit(1);
+    }
+	state.cache.blockSizeInWords = atoi(argv[2]);
+	state.cache.numberOfSets = atoi(argv[3]);
+	state.cache.blocksPerSet = atoi(argv[4]);
+	state.cache.cacheSize = state.cache.blockSizeInWords * state.cache.numberOfSets * state.cache.blocksPerSet;
+	state.cache.currentCacheSize = 0;
+	state.cache.counter = 0;
+	for(y = 0; y < MAXCACHE; y++)
+	{
+		for(z = 0; z < MAXCACHE; z++)
+		{
+			state.cache.sets[y][z].dirty = 0;
+			state.cache.sets[y][z].tag = 0;
+			state.cache.sets[y][z].valid = 0;
+		}
+		state.cache.blockSizes[y] = 0;
+	}
+	state.cache.currentCacheSize = 0;
+	state.cache.blockOffset = (int)(log(state.cache.blockSizeInWords)/log(2.0));
+	state.cache.setIndexSize = (int)(log(state.cache.numberOfSets)/log(2.0));
+    filePtr = fopen(argv[1], "r");
+    if (filePtr == NULL)
+	{
+		printf("error: can't open file %s", argv[1]);
+		perror("fopen");
+		exit(1);
+    }
+
+    /* read in the entire machine-code file into memory */
+    for (state.numMemory = 0; fgets(line, MAXLINELENGTH, filePtr) != NULL;
+	state.numMemory++) {
+	if (sscanf(line, "%d", state.mem+state.numMemory) != 1) {
+	    printf("error in reading address %d\n", state.numMemory);
+	    exit(1);
+	}
+	//printf("memory[%d]=%d\n", state.numMemory, state.mem[state.numMemory]);
+    }
+	
+
+	for(x = 0; x < NUMREGS; x++)
+	{
+		state.reg[x] = 0;
+	}
+	state.pc = 0;
+	
+	while(1)
+	{
+		int machineCode = state.mem[state.pc];
+		int opcode = machineCode >> 22;
+		cacheSim(state.pc, FETCH, &state);
+		
+		if( (opcode == 0) || (opcode == 1))
+		{
+			Rtype(opcode, machineCode, &state);
+			numInstructions++;
+		}
+		else if( (opcode == 2) || (opcode == 3) || (opcode == 4))
+		{
+			Itype(opcode, machineCode,  &state);
+			numInstructions++;
+		}
+		else if ( opcode == 5)
+		{
+			Jtype(opcode, machineCode, &state);
+			numInstructions++;
+		}
+		else if ( (opcode == 6))
+		{
+			state.pc++;
+			numInstructions++;
+			//printf("machine halted\n");
+			//printf("total of %d instructions executed\n", numInstructions);
+			//printf("final state of machine:\n");
+			//printState( &state);
+			exit(0);
+		}
+		else
+		{
+			state.pc++;
+		}
+		//printState( &state);
+	}
+    return(0);
+}
+
+
+int convertNum(int num)
+{
+	if(num & (1<< 15))
+	{
+		num-=(1 << 16);
+	}
+	return (num);
+}

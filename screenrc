@@ -1,0 +1,8 @@
+term screen-256color
+shell zsh
+startup_message off
+
+#
+# look and feel for the bottom two lines.
+#
+hardstatus alwayslastline "%?%{yk}%-Lw%?%{wb}%n*%f %t%?(%u)%?%?%{yk}%+Lw%?"

@@ -1,0 +1,49 @@
+class MonthViewBox:
+
+  def __init__(self,draw,top,left,height,width):
+    self.__draw = draw
+    self.__box_top_offset = top
+    self.__box_left_offset = left
+    self.__box_height = height
+    self.__box_width = width
+
+  # This method is pulled from http://jesselegg.com/archives/2009/09/5/simple-word-wrap-algorithm-pythons-pil/
+  def __drawWrappedWord(self, text, xpos, ypos, max_width, font, fill=(0,0,0)):
+      '''
+      Draw the given "text" to the x and y position of the image, using
+      the minimum length word-wrapping algorithm to restrict the text to
+      a pixel width of "max_width."
+      '''
+      text_size_x, text_size_y = self.__draw.textsize(text, font=font)
+      remaining = max_width
+      space_width, space_height = self.__draw.textsize(' ', font=font)
+      # use this list as a stack, push/popping each line
+      output_text = []
+      # split on whitespace...    
+      for word in text.split(None):
+          word_width, word_height = self.__draw.textsize(word, font=font)
+          if word_width + space_width > remaining:
+              output_text.append(word)
+              remaining = max_width - word_width
+          else:
+              if not output_text:
+                  output_text.append(word)
+              else:
+                  output = output_text.pop()
+                  output += ' %s' % word
+                  output_text.append(output)
+              remaining = remaining - (word_width + space_width)
+      for text in output_text:
+          self.__draw.text((xpos, ypos), text, font=font, fill=fill)
+          ypos += text_size_y
+
+    
+  def setData(self, data_hash):
+    self.__data_hash = data_hash;
+
+  def drawEventInfo(self,text,calendar_color,text_color,font):
+    self.__color = text_color;
+    self.__font = font;
+    self.__drawWrappedWord(text,self.__box_left_offset,self.__box_top_offset,self.__box_width,font,text_color);
+
+
