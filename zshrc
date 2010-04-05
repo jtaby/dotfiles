@@ -51,6 +51,8 @@ function j { local new_path="$(autojump $@)";if [ -n "$new_path" ]; then echo -e
 alias gs="git status"
 alias gc="git commit"
 alias gp="git push"
+alias ga="git add"
+
 
 #autojump
 #Copyright Joel Schaerer 2008, 2009
