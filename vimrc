@@ -145,6 +145,7 @@ let g:EnhCommentifyUseSyntax = "yes"
 " note that this differs from the normal-mode use of * in that you can phrase-search
 vmap * :<C-U>let old_reg=@"<cr>gvy/<C-R><C-R>=substitute(escape(@",'\\/.*$^~[]'),"\\n$","","")<CR><CR>:let @"=old_reg<CR>
 imap <C-t> <Esc>
+inoremap ;; <Esc>
 set paste
 filetype plugin on
 let $VIMRUNTIME="/Users/majd/.vim/"
