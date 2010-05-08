@@ -76,18 +76,29 @@ alias jumpstat="autojump --stat"
 
 function j { local new_path="$(autojump $@)";if [ -n "$new_path" ]; then echo -e "\\033[31m${new_path}\\033[0m"; cd "$new_path";fi }
 
+# SSH aliases
+alias vaio="ssh -p 2222 majd@taby.dnsalias.com"
 
+# GIT aliases
 alias gs="git status"
 alias gc="git commit -am"
 alias gp="git push"
 alias ga="git add"
+alias gu="git fetch && git rebase origin/master"
+alias gl="git log --graph --pretty=format:'%Cred%h%Creset %C(cyan)%an%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr)%Creset' --abbrev-commit --date=relative"
+
+function go() {
+  ga .
+  gc $1
+  gp
+}
+
 function gcl() {
   git clone $1
   git submodule init 
   git submodule update
 }
-alias gu="git fetch && git rebase origin/master"
-alias gl="git log --graph --pretty=format:'%Cred%h%Creset %C(cyan)%an%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr)%Creset' --abbrev-commit --date=relative"
+
 function vim {
        LIMIT=$#
        for ((i = 1; i <= $LIMIT; i++ )) do
