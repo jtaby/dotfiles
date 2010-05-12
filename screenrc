@@ -1,8 +1,45 @@
-term screen-256color
-shell zsh
+# This commented-out section used to be my screenrc, but I replaced it with 
+# github.com/andrewsardone/dotfiles/blob/master/screenrc cause his is way 
+# better than mine.
+
+# -----------------------------
+
+# term screen-256color
+# shell zsh
+# startup_message off
+# 
+# #
+# # look and feel for the bottom two lines.
+# #
+# hardstatus alwayslastline "%?%{yk}%-Lw%?%{wb}%n*%f %t%?(%u)%?%?%{yk}%+Lw%?"
+
+# -----------------------------
+
+# .screenrc
+# based on fhsm's .screenrc on CrunchBang Linux forums
+# http://crunchbanglinux.org/forums/topic/2532/screenrc-files/
+
+shell -$SHELL
+
+# Basic
+defscrollback   10000
+autodetach      on
+
+escape ^]^]
+
+# status
+hardstatus alwayslastline "%{= kw}%{g}[ %{R}%H %{g}] %{Y} %{g}[%=%{ =kw}%{w}%-w%{Y}[%{W}%n-%t%{Y}]%{w}%+w%=%{g}][ %{w}%m-%d %{Y}%c %{g}]"
+
+# add caption
+caption splitonly "%{= kw}%?%-Lw%?%{kw}%n*%t%f %?(%u)%?%{= kw}%?%+Lw%?"
+
+# xterm scrollback
+termcapinfo xterm ti@:te@
 startup_message off
 
-#
-# look and feel for the bottom two lines.
-#
-hardstatus alwayslastline "%?%{yk}%-Lw%?%{wb}%n*%f %t%?(%u)%?%?%{yk}%+Lw%?"
+# Tell Screen to write its copy buffer to a temporary file (defaults to
+# /tmp/screen-exchange), and then send that file to `pbcopy`.
+# Bound the command to C-a b
+# http://www.samsarin.com/blog/2007/03/11/gnu-screen-working-with-the-scrollback-buffer/
+bind b eval "writebuf" "exec sh -c 'pbcopy < /tmp/screen-exchange'"
+
