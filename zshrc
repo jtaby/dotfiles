@@ -88,8 +88,16 @@ alias gu="git fetch && git rebase origin/master"
 alias gl="git log --graph --pretty=format:'%Cred%h%Creset %C(cyan)%an%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr)%Creset' --abbrev-commit --date=relative"
 
 function go() {
+  echo "Commiting your changes..."
   ga .
   gc $1
+  echo ""
+
+  echo "Making sure your local branch is up-to-date..."
+  gu
+  echo ""
+
+  echo "Pushing your changes..."
   git push origin $2
 }
 
