@@ -99,6 +99,18 @@ function gcl() {
   git submodule update
 }
 
+function compress() {
+  tar cvzf $@
+}
+
+function uncompress() {
+  if [ -d "$2" ]; then
+    tar xvzf $1 -C $2
+  else
+    echo "$2 is not a directory!"
+  fi
+}
+
 function vim {
        LIMIT=$#
        for ((i = 1; i <= $LIMIT; i++ )) do
