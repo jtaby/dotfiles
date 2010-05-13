@@ -90,7 +90,7 @@ alias gl="git log --graph --pretty=format:'%Cred%h%Creset %C(cyan)%an%Creset -%C
 function go() {
   ga .
   gc $1
-  gp
+  git push origin $2
 }
 
 function gcl() {
