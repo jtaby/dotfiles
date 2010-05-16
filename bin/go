@@ -1,20 +1,22 @@
 #!/usr/bin/perl
 
 if(@ARGV < 2){
-  print "It doesn't look like you specified a remote branch, push to master? (y/n): ";
+  print "Push to master branch? (y/n): ";
   if(<STDIN> == "y" || <STDIN> == "yes"){
     $branch = "master";
+    $msg = $ARGV[0];
   } else {
     print "Quitting...\n";
     exit(1);
   }
 } else {
   $branch = $ARGV[0];
+  $msg = $ARGV[1];
 }
 
 print "\n-----\nCommiting your changes...\n";
-print `ga .`;
-print `gc $ARGV[1]`;
+system("git","add",".");
+print `git commit -m $msg`;
 
 print "\n-----\nMaking sure your local branch is up-to-date...\n";
 print `gu`;

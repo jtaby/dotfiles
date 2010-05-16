@@ -1,0 +1,4 @@
+#!/usr/bin/perl
+
+print `git fetch`;
+print `git rebase origin/master`;

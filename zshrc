@@ -67,7 +67,6 @@ alias gs="git status"
 alias gc="git commit -am"
 alias gp="git push"
 alias ga="git add"
-alias gu="git fetch && git rebase origin/master"
 alias gl="git log --graph --pretty=format:'%Cred%h%Creset %C(cyan)%an%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr)%Creset' --abbrev-commit --date=relative"
 
 #------------------------------------------------------
