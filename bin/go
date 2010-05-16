@@ -16,7 +16,8 @@ if(@ARGV < 2){
 
 print "\n-----\nCommiting your changes...\n";
 system("git","add",".");
-print `git commit -m $msg`;
+system("git","commit","-m",$msg);
+#print `git commit -m $msg`;
 
 print "\n-----\nMaking sure your local branch is up-to-date...\n";
 print `gu`;
