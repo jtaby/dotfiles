@@ -20,7 +20,7 @@ system("git","commit","-m",$msg);
 #print `git commit -m $msg`;
 
 print "\n-----\nMaking sure your local branch is up-to-date...\n";
-print `gu`;
+system("gu");
 
 print "\n-----\nPushing your changes...\n";
 print `git push origin $branch`
