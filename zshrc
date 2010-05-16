@@ -1,3 +1,7 @@
+
+#------------------------------------------------------
+#------------------------------------------------------
+
 # Path to your oh-my-zsh configuration.
 export ZSH=$HOME/.oh-my-zsh
 
@@ -17,7 +21,12 @@ export ZSH_THEME="prose"
 source $ZSH/oh-my-zsh.sh
 
 # Customize to your needs...
-export PATH=/opt/local/bin:/opt/local/sbin:/Users/majd/.gem/ruby/1.8/bin:/usr/local/bin:/usr/local/sbin:/usr/local/mysql/bin:/opt/local/bin:/opt/local/sbin:/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:/usr/X11/bin:/usr/local/bin:/opt/local/bin:/opt/bin:/Users/majd/bin:/Users/majdtaby/.gem/ruby/1.8/bin
+export PATH=/opt/bin:/opt/local/bin:/opt/local/sbin
+export PATH=/Users/majd/.gem/ruby/1.8/bin:/Users/majd/dotfiles/bin:/Users/majd/bin:$PATH
+export PATH=/usr/local/bin:/usr/bin:/bin:/usr/sbin:/usr/X11/bin:$PATH
+
+#------------------------------------------------------
+#------------------------------------------------------
 
 #autojump
 #Copyright Joel Schaerer 2008, 2009
@@ -47,39 +56,14 @@ alias jumpstat="autojump --stat"
 
 function j { local new_path="$(autojump $@)";if [ -n "$new_path" ]; then echo -e "\\033[31m${new_path}\\033[0m"; cd "$new_path";fi }
 
-
-#autojump
-#Copyright Joel Schaerer 2008, 2009
-#This file is part of autojump
-
-#autojump is free software: you can redistribute it and/or modify
-#it under the terms of the GNU General Public License as published by
-#the Free Software Foundation, either version 3 of the License, or
-#(at your option) any later version.
-#
-#autojump is distributed in the hope that it will be useful,
-#but WITHOUT ANY WARRANTY; without even the implied warranty of
-#MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#GNU General Public License for more details.
-#
-#You should have received a copy of the GNU General Public License
-#along with autojump.  If not, see <http://www.gnu.org/licenses/>.
-
-function autojump_preexec() {
-    { (autojump -a "$(pwd -P)"&)>/dev/null 2>>|${HOME}/.autojump_errors ; } 2>/dev/null
-}
-
-typeset -ga preexec_functions
-preexec_functions+=autojump_preexec
-
-alias jumpstat="autojump --stat"
-
-function j { local new_path="$(autojump $@)";if [ -n "$new_path" ]; then echo -e "\\033[31m${new_path}\\033[0m"; cd "$new_path";fi }
+#------------------------------------------------------
+#------------------------------------------------------
 
 # SSH aliases
 alias vaio="ssh -p 2222 majd@taby.dnsalias.com"
 
 # GIT aliases
+alias gw="git-wtf"
 alias gs="git status"
 alias gc="git commit -am"
 alias gp="git push"
@@ -106,6 +90,9 @@ function gcl() {
   git submodule init 
   git submodule update
 }
+
+#------------------------------------------------------
+#------------------------------------------------------
 
 function compress() {
   tar cvzf $@
@@ -137,3 +124,8 @@ function vim {
                command vim "$@"
        fi
 }
+
+#------------------------------------------------------
+#------------------------------------------------------
+
+
