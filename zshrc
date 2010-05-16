@@ -21,9 +21,8 @@ export ZSH_THEME="prose"
 source $ZSH/oh-my-zsh.sh
 
 # Customize to your needs...
-export PATH=/opt/bin:/opt/local/bin:/opt/local/sbin
-export PATH=/Users/majd/.gem/ruby/1.8/bin:/Users/majd/dotfiles/bin:/Users/majd/bin:$PATH
-export PATH=/usr/local/bin:/usr/bin:/bin:/usr/sbin:/usr/X11/bin:$PATH
+export PATH=/Users/majd/dotfiles/bin:/opt/local/bin:/opt/local/sbin:/Users/majd/.gem/ruby/1.8/bin:/usr/local/bin:/usr/local/sbin:/usr/local/mysql/bin:/opt/local/bin:/opt/local/sbin:/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:/usr/X11/bin:/usr/local/bin:/opt/local/bin:/opt/bin:/Users/majd/bin:/Users/majdtaby/.gem/ruby/1.8/bin
+
 
 #------------------------------------------------------
 #------------------------------------------------------
@@ -71,29 +70,10 @@ alias ga="git add"
 alias gu="git fetch && git rebase origin/master"
 alias gl="git log --graph --pretty=format:'%Cred%h%Creset %C(cyan)%an%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr)%Creset' --abbrev-commit --date=relative"
 
-function go() {
-  echo "Commiting your changes..."
-  ga .
-  gc $1
-  echo ""
-
-  echo "Making sure your local branch is up-to-date..."
-  gu
-  echo ""
-
-  echo "Pushing your changes..."
-  git push origin $2
-}
-
-function gcl() {
-  git clone $1
-  git submodule init 
-  git submodule update
-}
-
 #------------------------------------------------------
 #------------------------------------------------------
 
+# I could never remember the arguments for tar
 function compress() {
   tar cvzf $@
 }
@@ -102,10 +82,13 @@ function uncompress() {
   if [ -d "$2" ]; then
     tar xvzf $1 -C $2
   else
-    echo "$2 is not a directory!"
+    mkdir $2
+    tar xvzf $1 -C $2
   fi
 }
 
+# Make vim ask for sudo password if I try to open a 
+# privileged file
 function vim {
        LIMIT=$#
        for ((i = 1; i <= $LIMIT; i++ )) do

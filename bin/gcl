@@ -1,0 +1,12 @@
+#!/usr/bin/perl
+
+print "-----\nCloning Repository...\n";
+print `git clone $ARGV[0]`;
+$ARGV[0] =~ /(\w+)\.git/;
+chdir $1;
+
+print "\n-----\nInitializing submodules...\n";
+print `git submodule init`;
+
+print "\n-----\nUpdating submodules...\n";
+print `git submodule update`;
