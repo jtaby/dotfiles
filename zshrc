@@ -62,7 +62,6 @@ function j { local new_path="$(autojump $@)";if [ -n "$new_path" ]; then echo -e
 alias vaio="ssh -p 2222 majd@taby.dnsalias.com"
 
 # GIT aliases
-alias gw="git-wtf"
 alias gs="git status"
 alias gc="git commit -am"
 alias gp="git push"
