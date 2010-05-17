@@ -6,8 +6,8 @@ if(@ARGV < 2){
     $branch = "master";
     $msg = $ARGV[0];
   } else {
-    print "Quitting...\n";
-    exit(1);
+    print "Name of remote branch to push to: ";
+    $branch = <STDIN>;
   }
 } else {
   $branch = $ARGV[0];
