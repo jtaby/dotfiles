@@ -6,6 +6,11 @@ my $input = "";
 my $branch = "";
 my $msg = "";
 
+if(@ARGV == 0){
+  print "Usage: go [remote branch] \"message\"\n";
+  exit(1);
+}
+
 if(@ARGV < 2){
   print "Push to master branch? (y/n): ";
   chomp($input = <STDIN>);
@@ -25,10 +30,11 @@ if(@ARGV < 2){
 
 print "\n-----\nCommiting your changes...\n";
 print `git add .`;
-print `git commit -m $msg`;
+print `git commit -m "$msg"`;
 
 print "\n-----\nMaking sure your local branch is up-to-date...\n";
-print `gu`;
+print `git fetch`;
+print `git rebase origin/$branch`;
 
 print "\n-----\nPushing your changes...\n";
 print `git push origin $branch`
