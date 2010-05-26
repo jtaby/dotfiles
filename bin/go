@@ -2,7 +2,8 @@
 
 if(@ARGV < 2){
   print "Push to master branch? (y/n): ";
-  if(<STDIN> == "y" || <STDIN> == "yes"){
+  $input = <STDIN>;
+  if($input == "y" || $input == "yes"){
     $branch = "master";
     $msg = $ARGV[0];
   } else {
