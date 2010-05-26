@@ -10,7 +10,7 @@ if(@ARGV < 2){
   print "Push to master branch? (y/n): ";
   chomp($input = <STDIN>);
 
-  if($input == "y" || $input == "yes"){
+  if($input eq "y" || $input eq "yes"){
     $branch = "master";
   } else {
     print "Name of remote branch to push to: ";
