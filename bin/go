@@ -1,27 +1,34 @@
 #!/usr/bin/perl
+use warnings;
+use strict;
+
+my $input = "";
+my $branch = "";
+my $msg = "";
 
 if(@ARGV < 2){
   print "Push to master branch? (y/n): ";
-  $input = <STDIN>;
+  chomp($input = <STDIN>);
+
   if($input == "y" || $input == "yes"){
     $branch = "master";
-    $msg = $ARGV[0];
   } else {
     print "Name of remote branch to push to: ";
     $branch = <STDIN>;
   }
+
+  $msg = $ARGV[0];
 } else {
   $branch = $ARGV[0];
   $msg = $ARGV[1];
 }
 
 print "\n-----\nCommiting your changes...\n";
-system("git","add",".");
-system("git","commit","-m",$msg);
-#print `git commit -m $msg`;
+print `git add .`;
+print `git commit -m $msg`;
 
 print "\n-----\nMaking sure your local branch is up-to-date...\n";
-system("gu");
+print `gu`;
 
 print "\n-----\nPushing your changes...\n";
 print `git push origin $branch`
