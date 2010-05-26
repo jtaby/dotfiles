@@ -19,7 +19,7 @@ if(@ARGV < 2){
     $branch = "master";
   } else {
     print "Name of remote branch to push to: ";
-    $branch = <STDIN>;
+    chomp($branch = <STDIN>);
   }
 
   $msg = $ARGV[0];
