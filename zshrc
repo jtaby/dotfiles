@@ -23,6 +23,11 @@ source $ZSH/oh-my-zsh.sh
 # Customize to your needs...
 export PATH=/Users/majd/dotfiles/bin:/opt/local/bin:/opt/local/sbin:/Users/majd/.gem/ruby/1.8/bin:/usr/local/bin:/usr/local/sbin:/usr/local/mysql/bin:/opt/local/bin:/opt/local/sbin:/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:/usr/X11/bin:/usr/local/bin:/opt/local/bin:/opt/bin:/Users/majd/bin:/Users/majdtaby/.gem/ruby/1.8/bin
 
+# Make git use colors in its output
+git config --global color.diff auto
+git config --global color.status auto
+git config --global color.branch auto
+
 
 #------------------------------------------------------
 #------------------------------------------------------
@@ -63,6 +68,7 @@ alias vaio="ssh -p 2222 majd@taby.dnsalias.com"
 
 # GIT aliases
 alias gs="git status"
+alias gd="git diff --color"
 alias gc="git commit -am"
 alias gp="git push"
 alias ga="git add"

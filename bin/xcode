@@ -1,0 +1,8 @@
+#!/usr/bin/perl
+
+if(@ARGV != 1){
+  print "Usage: xcode [DIRECTORY]";
+  exit(1);
+}
+
+system("open $ARGV[0] -a /Developer/Applications/Xcode.app");
