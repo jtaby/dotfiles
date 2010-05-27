@@ -1,3 +1,7 @@
 [submodule "autojump"]
   path = autojump
   url = git://github.com/joelthelion/autojump.git
+
+[submodule "oh-my-zsh"]
+  path = oh-my-zsh
+  url = git://github.com/jtaby/oh-my-zsh.git
