@@ -28,6 +28,33 @@ git config --global color.diff auto
 git config --global color.status auto
 git config --global color.branch auto
 
+# Always pushd when changing directory
+setopt auto_pushd
+# Have pushd with no arguments act like 'pushd $HOME'.
+setopt PUSHD_TO_HOME
+
+# 10 second wait if you do something that will delete everything.  I wish Id had this before...
+setopt RM_STAR_WAIT
+
+# Meta-u to chdir to the parent directory
+bindkey -s '\eu' '^Ucd ..; ls^M'
+
+function title {
+    if [[ $TERM == "screen"* ]]; then
+        print -nR $'\033k'$1$'\033\\'
+        print -nR $'\033]0;'$2$'\a'
+    fi
+}
+
+function precmd {
+    title "zsh" "$PWD"
+}   
+
+function preexec {
+    emulate -L zsh
+    local -a cmd; cmd=(${(z)1})
+    title "$cmd[1]:t" "$cmd[2,-1]"
+}
 
 #------------------------------------------------------
 #------------------------------------------------------

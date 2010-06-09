@@ -34,7 +34,11 @@ print `git commit -m "$msg"`;
 
 print "\n-----\nMaking sure your local branch is up-to-date...\n";
 print `git fetch`;
-print `git rebase origin/$branch`;
+print `git rebase origin/master`;
+
+if($branch ne "master"){
+  print `git rebase origin/$branch`;
+}
 
 print "\n-----\nPushing your changes...\n";
 print `git push origin $branch`
