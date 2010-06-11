@@ -1,0 +1,11 @@
+#!/usr/bin/perl
+use warnings;
+use strict;
+
+if(@ARGV != 1){
+  die "Usage: grevertrepo HASH\n";
+}
+
+my $hash = $ARGV[0];
+
+print `git revert --no-edit $hash`;

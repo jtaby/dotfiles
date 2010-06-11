@@ -28,11 +28,6 @@ git config --global color.diff auto
 git config --global color.status auto
 git config --global color.branch auto
 
-# Always pushd when changing directory
-setopt auto_pushd
-# Have pushd with no arguments act like 'pushd $HOME'.
-setopt PUSHD_TO_HOME
-
 # 10 second wait if you do something that will delete everything.  I wish Id had this before...
 setopt RM_STAR_WAIT
 
