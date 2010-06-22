@@ -94,6 +94,7 @@ alias gd="git diff --color"
 alias gc="git commit -am"
 alias gp="git push"
 alias ga="git add"
+alias gb="gbranch"
 alias gl="git log --graph --pretty=format:'%Cred%h%Creset %C(cyan)%an%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr)%Creset' --abbrev-commit --date=relative"
 
 #------------------------------------------------------
