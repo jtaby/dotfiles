@@ -44,7 +44,7 @@ set laststatus=2
 set guioptions-=T
 
 " Always change to the directory the file in your current buffer is in
-au BufEnter * :cd %:p:h
+""au BufEnter * :cd %:p:h
 au FocusLost * :wa
 
 " Leader
@@ -59,6 +59,7 @@ set incsearch
 set showmatch 
 set hlsearch 
 map <leader><space> :noh<cr>
+map <leader>d :cd %:p:h<cr>
 runtime macros/matchit.vim
 nmap <tab> %
 vmap <tab> %
