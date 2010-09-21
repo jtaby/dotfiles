@@ -43,6 +43,8 @@ set clipboard+=unnamed
 set laststatus=2 
 set guioptions-=T
 
+set modelines=0
+
 " Always change to the directory the file in your current buffer is in
 ""au BufEnter * :cd %:p:h
 au FocusLost * :wa
