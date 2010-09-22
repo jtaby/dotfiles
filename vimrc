@@ -77,8 +77,6 @@ nnoremap <leader>w <C-w>v<C-w>l
 " fix for console/terminal first, though
 map Oc <C-Right>
 map Od <C-Left>
-noremap <C-Right> :bn<CR>
-noremap <C-Left> :bp<CR>
 
 " The single greatest human achievement
 nnoremap ; :
