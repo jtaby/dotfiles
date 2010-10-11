@@ -12,8 +12,6 @@ export ZSH_THEME="jtaby"
 # Set to this to use case-sensitive completion
 # export CASE_SENSITIVE="true"
 
-source $ZSH/oh-my-zsh.sh
-
 # Customize to your needs...
 export PATH=/Users/majd/.seeds/bin:/Users/majd/src/depot_tools:/Users/majd/dotfiles/bin:/opt/local/bin:/opt/local/sbin:/Users/majd/.gem/ruby/1.8/bin:/usr/local/bin:/usr/local/sbin:/usr/local/mysql/bin:/opt/local/bin:/opt/local/sbin:/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:/usr/X11/bin:/usr/local/bin:/opt/local/bin:/opt/bin:/Users/majd/bin:/Users/majdtaby/.gem/ruby/1.8/bin
 
@@ -44,6 +42,8 @@ function preexec {
 
 # Which plugins from the plugins/ directory to load
 plugins=(git osx textmate gem github)
+
+source $ZSH/oh-my-zsh.sh
 
 #------------------------------------------------------
 #------------------------------------------------------
