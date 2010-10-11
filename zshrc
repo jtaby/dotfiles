@@ -12,14 +12,6 @@ export ZSH_THEME="jtaby"
 # Set to this to use case-sensitive completion
 # export CASE_SENSITIVE="true"
 
-# Comment this out to disable weekly auto-update checks
-# export DISABLE_AUTO_UPDATE="true"
-
-# Uncomment following line if you want to disable colors in ls
-# export DISABLE_LS_COLORS="true"
-
-source $ZSH/oh-my-zsh.sh
-
 # Customize to your needs...
 export PATH=/Users/majd/dotfiles/bin:$PATH
 export PATH=/Users/majd/.seeds/bin:$PATH        #seedjs
@@ -49,6 +41,11 @@ function preexec {
     local -a cmd; cmd=(${(z)1})
     title "$cmd[1]:t" "$cmd[2,-1]"
 }
+
+# Which plugins from the plugins/ directory to load
+plugins=(git osx textmate gem github)
+
+source $ZSH/oh-my-zsh.sh
 
 #------------------------------------------------------
 #------------------------------------------------------
