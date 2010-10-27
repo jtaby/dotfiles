@@ -13,7 +13,9 @@ export ZSH_THEME="jtaby"
 # export CASE_SENSITIVE="true"
 
 # Customize to your needs...
-export PATH=/Users/majd/.seeds/bin:/Users/majd/src/depot_tools:/Users/majd/dotfiles/bin:/opt/local/bin:/opt/local/sbin:/Users/majd/.gem/ruby/1.8/bin:/usr/local/bin:/usr/local/sbin:/usr/local/mysql/bin:/opt/local/bin:/opt/local/sbin:/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:/usr/X11/bin:/usr/local/bin:/opt/local/bin:/opt/bin:/Users/majd/bin:/Users/majdtaby/.gem/ruby/1.8/bin
+export PATH=/Users/majd/dotfiles/bin:$PATH
+export PATH=/Users/majd/.seeds/bin:$PATH        #seedjs
+export PATH=/Users/majd/.gem/ruby/1.8/bin:$PATH #ruby
 
 # Make git use colors in its output
 git config --global color.diff auto
