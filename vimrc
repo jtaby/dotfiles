@@ -30,6 +30,8 @@ set nu "line numbers
 
 set ttyfast
 
+set relativenumber
+
 set backup " make backups
 set backupdir=~/.vim/backup
 set directory=/tmp " for temp files
@@ -72,6 +74,9 @@ map <C-j> <C-w>j
 map <C-k> <C-w>k
 map <C-l> <C-w>l
 
+" NERDTree
+map <Leader>nt :NERDTree<CR>
+
 " map ctrl-left ctrl-right to move to next/prev buffers
 " fix for console/terminal first, though
 map Oc <C-Right>
@@ -108,9 +113,10 @@ colorscheme molokai
 vmap * :<C-U>let old_reg=@"<cr>gvy/<C-R><C-R>=substitute(escape(@",'\\/.*$^~[]'),"\\n$","","")<CR><CR>:let @"=old_reg<CR>
 
 let b:delimitMate_expand_cr = "\<CR>\<CR>\<Up>\<Tab>"
-
+  
 " Mappings
 inoremap ;; <Esc>
 imap <C-t> <Esc>
-
+map <leader>cc <leader>ci
+ 
 let $VIMRUNTIME="/Users/majd/.vim/"
