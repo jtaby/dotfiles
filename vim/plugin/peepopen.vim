@@ -24,6 +24,8 @@ let g:peepopen_loaded = 1
 let s:save_cpo = &cpo
 set cpo&vim
 
+" PeepOpen support
+
 function s:LaunchPeepOpenViaVim()
   let cwd = getcwd()
   silent exe "!open -a PeepOpen " . shellescape(cwd)
@@ -36,6 +38,22 @@ noremap <SID>Launch :call <SID>LaunchPeepOpenViaVim()<CR>
 
 if !hasmapto('<Plug>PeepOpen')
   map <unique> <silent> <Leader>p <Plug>PeepOpen
+endif
+
+" Ack support
+
+function s:LaunchPeepOpenAckViaVim()
+  let cwd = getcwd()
+  silent exe "!open -a /Users/majd/Dropbox/Play/PeepOpen/build/Debug/PeepOpen.app " . shellescape(cwd)
+endfunction
+
+command! PeepOpenAck :call <SID>LaunchPeepOpenAckViaVim()
+
+noremap <unique> <script> <Plug>PeepOpenAck <SID>LaunchAck
+noremap <SID>LaunchAck :call <SID>LaunchPeepOpenAckViaVim()<CR>
+
+if !hasmapto('<Plug>PeepOpenAck')
+  map <unique> <silent> <Leader>a <Plug>PeepOpenAck
 endif
 
 let &cpo = s:save_cpo
