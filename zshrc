@@ -9,9 +9,6 @@ export ZSH=$HOME/.oh-my-zsh
 # Look in ~/.oh-my-zsh/themes/
 export ZSH_THEME="jtaby"
 
-# Set to this to use case-sensitive completion
-# export CASE_SENSITIVE="true"
-
 # Customize to your needs...
 export PATH=/Users/majd/dotfiles/bin:$PATH
 export PATH=/Users/majd/.seeds/bin:$PATH        #seedjs
@@ -43,9 +40,18 @@ function preexec {
 }
 
 # Which plugins from the plugins/ directory to load
-plugins=(git osx textmate gem github)
+plugins=(git)
 
 source $ZSH/oh-my-zsh.sh
+
+#------------------------------------------------------
+#------------------------------------------------------
+
+# Super awesome directory history navigation
+DIRSTACKSIZE=8
+setopt autopushd pushdminus pushdsilent pushdtohome
+alias dh='dirs -v'
+
 
 #------------------------------------------------------
 #------------------------------------------------------
@@ -90,8 +96,10 @@ alias gd="git diff --color"
 alias gc="git commit -am"
 alias gp="git push"
 alias ga="git add"
+alias gf="git fetch"
 alias gb="gbranch"
 alias gl="git log --graph --pretty=format:'%Cred%h%Creset %C(cyan)%an%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr)%Creset' --abbrev-commit --date=relative"
+alias gurl="git config --get remote.origin.url"
 
 alias gclean="git clean -f"
 alias gmate="git diff | mate"
