@@ -1,0 +1,50 @@
+workspace: /Users/majd/work
+
+repositories:
+  sproutcore:
+    - master
+    - taby/master
+    - taby/fileUpload
+    - taby/renderDelegates
+    - taby/sproutScope
+
+  coreweb:
+    - master
+    - taby/master
+    - taby/fileUpload
+
+  me:
+    - master
+
+  chance:
+    - master
+
+  contacts2:
+    - master
+    - taby/modules
+
+  file_uploader:
+    - master
+
+  savannah:
+    - master
+    - taby/master
+
+  sproutcore-samples:
+    - master
+
+  abbot:
+    - master
+    - taby/master
+
+  modular_loading_test_app:
+    - master
+
+  tools:
+    - master
+    - taby/master
+  
+  vanquish:
+    - master
+    - taby/master
+

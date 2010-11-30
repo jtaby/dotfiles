@@ -11,8 +11,7 @@ export ZSH_THEME="jtaby"
 
 # Customize to your needs...
 export PATH=/Users/majd/dotfiles/bin:$PATH
-export PATH=/Users/majd/.seeds/bin:$PATH        #seedjs
-export PATH=/Users/majd/.gem/ruby/1.8/bin:$PATH #ruby
+export PATH=/Users/majd/work/tools:$PATH
 
 # Make git use colors in its output
 git config --global color.diff auto
