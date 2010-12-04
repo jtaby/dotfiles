@@ -92,7 +92,7 @@ alias vaio="ssh -p 2222 majd@taby.dnsalias.com"
 # GIT aliases
 alias gs="git status"
 alias gd="git diff --color"
-alias gc="git commit -am"
+alias gc="git commit -m"
 alias gp="git push"
 alias ga="git add"
 alias gf="git fetch"
