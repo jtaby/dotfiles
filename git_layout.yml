@@ -4,9 +4,7 @@ repositories:
   sproutcore:
     - master
     - taby/master
-    - taby/fileUpload
-    - taby/renderDelegates
-    - taby/sproutScope
+    - taby/modules
 
   coreweb:
     - master
@@ -16,12 +14,8 @@ repositories:
   me:
     - master
 
-  chance:
-    - master
-
   contacts2:
     - master
-    - taby/modules
 
   file_uploader:
     - master
@@ -29,9 +23,6 @@ repositories:
   savannah:
     - master
     - taby/master
-
-  sproutcore-samples:
-    - master
 
   abbot:
     - master
