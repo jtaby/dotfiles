@@ -4,12 +4,10 @@ repositories:
   sproutcore:
     - master
     - taby/master
-    - taby/modules
 
   coreweb:
     - master
     - taby/master
-    - taby/fileUpload
 
   me:
     - master
