@@ -54,6 +54,9 @@ au FocusLost * :wa
 " Leader
 let mapleader = ";"
 
+" The single greatest human achievement
+nnoremap <Leader> :
+
 " Selection
 nnoremap / /\v
 vnoremap / /\v
@@ -81,9 +84,6 @@ map <Leader>nt :NERDTree<CR>
 " fix for console/terminal first, though
 map Oc <C-Right>
 map Od <C-Left>
-
-" The single greatest human achievement
-nnoremap ; :
 
 " Be certain these two lines have no trailing spaces
 " Rehighlight visual block after left/right shift

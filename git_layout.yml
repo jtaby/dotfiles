@@ -1,9 +1,13 @@
 workspace: /Users/majd/work
 
 repositories:
-  sproutcore:
+
+  abbot:
     - master
     - taby/master
+
+  contacts2:
+    - master
 
   coreweb:
     - master
@@ -12,28 +16,17 @@ repositories:
   me:
     - master
 
-  contacts2:
-    - master
-
-  file_uploader:
+  ribbon:
     - master
 
   savannah:
     - master
     - taby/master
 
-  abbot:
+  sproutcore:
     - master
     - taby/master
-
-  modular_loading_test_app:
-    - master
 
   tools:
     - master
     - taby/master
-  
-  vanquish:
-    - master
-    - taby/master
-
