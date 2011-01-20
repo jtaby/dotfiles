@@ -21,16 +21,16 @@ git config --global color.branch auto
 # 10 second wait if you do something that will delete everything.  I wish Id had this before...
 setopt RM_STAR_WAIT
 
-function title {
-    if [[ $TERM == "screen"* ]]; then
-        print -nR $'\033k'$1$'\033\\'
-        print -nR $'\033]0;'$2$'\a'
-    fi
-}
+#function title {
+    #if [[ $TERM == "screen"* ]]; then
+        #print -nR $'\033k'$1$'\033\\'
+        #print -nR $'\033]0;'$2$'\a'
+    #fi
+#}
 
 function precmd {
     title "zsh" "$PWD"
-}   
+}
 
 function preexec {
     emulate -L zsh
