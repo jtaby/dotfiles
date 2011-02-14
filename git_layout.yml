@@ -2,12 +2,9 @@ workspace: /Users/majd/work
 
 repositories:
 
-  abbot:
+  sproutcore:
     - master
     - taby/master
-
-  contacts2:
-    - master
 
   coreweb:
     - master
@@ -16,17 +13,10 @@ repositories:
   me:
     - master
 
-  ribbon:
-    - master
-
-  savannah:
+  abbot:
     - master
     - taby/master
 
-  sproutcore:
-    - master
-    - taby/master
-
-  tools:
+  contacts2:
     - master
     - taby/master
