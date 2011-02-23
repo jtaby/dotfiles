@@ -30,13 +30,13 @@ setopt RM_STAR_WAIT
 #}
 
 function precmd {
-    title "zsh" "$PWD"
+    #title "zsh" "$PWD"
 }
 
 function preexec {
     emulate -L zsh
     local -a cmd; cmd=(${(z)1})
-    title "$cmd[1]:t" "$cmd[2,-1]"
+    #title "$cmd[1]:t" "$cmd[2,-1]"
 }
 
 # Which plugins from the plugins/ directory to load
@@ -103,6 +103,9 @@ alias gurl="git config --get remote.origin.url"
 
 alias gclean="git clean -f"
 alias gmate="git diff | mate"
+
+# SproutCore aliases
+alias ss="rm -rf tmp && ./bin/sc-server -v"
 
 #------------------------------------------------------
 #------------------------------------------------------
