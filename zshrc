@@ -105,7 +105,7 @@ alias gclean="git clean -f"
 alias gmate="git diff | mate"
 
 # SproutCore aliases
-alias ss="rm -rf tmp && ./bin/sc-server -v"
+alias ss="rm -rf tmp && ./bin/sc-server"
 
 #------------------------------------------------------
 #------------------------------------------------------
