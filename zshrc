@@ -82,7 +82,7 @@ preexec_functions+=autojump_preexec
 
 alias jumpstat="autojump --stat"
 
-function j { local new_path="$(autojump $@)";if [ -n "$new_path" ]; then echo -e "${new_path}"; cd "$new_path";fi }
+function j { local new_path="$(autojump $@)";if [ -n "$new_path" ]; then echo -e "\\033[31m${new_path}\\033[0m"; cd "$new_path";fi }
 
 #------------------------------------------------------
 #------------------------------------------------------
@@ -97,7 +97,7 @@ alias gc="git commit -m"
 alias gp="git push"
 alias ga="git add"
 alias gf="git fetch"
-alias gb="gbranch"
+#alias gb="gbranch"
 alias gl="git log --graph --pretty=format:'%Cred%h%Creset %C(cyan)%an%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr)%Creset' --abbrev-commit --date=relative"
 alias gurl="git config --get remote.origin.url"
 
@@ -111,8 +111,16 @@ alias ss="rm -rf tmp && ./bin/sc-server -v"
 #------------------------------------------------------
 
 # I could never remember the arguments for tar
+function mydiff() {
+  tar cvzf $@
+}
+
 function compress() {
   tar cvzf $@
+}
+
+function gb() {
+  gbranch $@
 }
 
 function uncompress() {
@@ -147,5 +155,11 @@ function vim {
 
 #------------------------------------------------------
 #------------------------------------------------------
-
 source "$HOME/.rvm/scripts/rvm"
+
+fpath=($fpath ~/Dropbox/Play)
+autoload -U ~/Dropbox/Play/*(:t)
+autoload -U compinit
+compinit
+
+
