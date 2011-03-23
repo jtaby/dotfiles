@@ -105,7 +105,7 @@ alias gclean="git clean -f"
 alias gmate="git diff | mate"
 
 # SproutCore aliases
-alias ss="rm -rf tmp && ./bin/sc-server -v"
+alias ss="rm -rf tmp && ./bin/sc-server"
 
 #------------------------------------------------------
 #------------------------------------------------------
@@ -121,6 +121,10 @@ function compress() {
 
 function gb() {
   gbranch $@
+}
+
+function gco() {
+  git checkout $@
 }
 
 function uncompress() {
@@ -157,8 +161,8 @@ function vim {
 #------------------------------------------------------
 source "$HOME/.rvm/scripts/rvm"
 
-fpath=($fpath ~/Dropbox/Play)
-autoload -U ~/Dropbox/Play/*(:t)
+fpath=($fpath ~/dotfiles/functions)
+autoload -U ~/dotfiles/functions/*(:t)
 autoload -U compinit
 compinit
 
