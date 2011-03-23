@@ -97,7 +97,7 @@ alias gc="git commit -m"
 alias gp="git push"
 alias ga="git add"
 alias gf="git fetch"
-#alias gb="gbranch"
+alias gb="gbranch"
 alias gl="git log --graph --pretty=format:'%Cred%h%Creset %C(cyan)%an%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr)%Creset' --abbrev-commit --date=relative"
 alias gurl="git config --get remote.origin.url"
 
@@ -117,10 +117,6 @@ function mydiff() {
 
 function compress() {
   tar cvzf $@
-}
-
-function gb() {
-  gbranch $@
 }
 
 function gco() {
