@@ -1,0 +1,17 @@
+#compdef gd
+
+(( $+functions[__git_commit_history] )) ||
+__git_commit_history () {
+  
+  local lines words
+  
+  lines=(${(f)"$(git log -n 15 --pretty=format:"'%h - %an - %s'")"} )
+  words=(${(f)"$(git log -n 15 --pretty=format:"%h")"})
+  
+  compadd -l -d lines -a -- words
+}
+
+_arguments -C \
+  '*:branch-name:__git_commit_history' && ret=0
+  
+return ret
