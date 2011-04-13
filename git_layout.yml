@@ -1,22 +1,24 @@
 workspace: /Users/majd/work
 
 repositories:
-
   sproutcore:
     - master
     - taby/master
-
   coreweb:
     - master
     - taby/master
-
-  me:
+  cloudos:
     - master
-
+  cloudkit:
+    - master
+    - taby/master
+  sc-docs:
+    - master
   abbot:
     - master
     - taby/master
-
   contacts2:
     - master
     - taby/master
+  tools:
+    - master

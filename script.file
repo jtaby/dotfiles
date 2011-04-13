@@ -1,0 +1,1 @@
+watch( 'httpd\.conf' ) { |md| system('apachectl graceful') }
