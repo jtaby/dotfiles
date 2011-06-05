@@ -13,6 +13,7 @@ export ZSH_THEME="jtaby"
 export PATH=/Users/majd/dotfiles/bin:$PATH
 export PATH=/Users/majd/work/tools:$PATH
 export PATH=/Users/majd/usr/bin:$PATH
+export PATH=/Users/majd/github/depot_tools:$PATH
 
 # Make git use colors in its output
 git config --global color.diff auto
