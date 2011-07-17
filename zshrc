@@ -7,7 +7,7 @@ export ZSH=$HOME/.oh-my-zsh
 
 # Set to the name theme to load.
 # Look in ~/.oh-my-zsh/themes/
-export ZSH_THEME="jtaby"
+export ZSH_THEME="prose"
 
 # Customize to your needs...
 export PATH=/Users/majd/dotfiles/bin:$PATH
@@ -170,5 +170,4 @@ fpath=($fpath ~/dotfiles/functions)
 autoload -U ~/dotfiles/functions/*(:t)
 autoload -U compinit
 compinit
-
 
