@@ -1,0 +1,77 @@
+#!/usr/bin/perl -sw
+use warnings;
+use strict;
+#use Getopt::Std;
+use vars qw/$D/;
+
+# gbr allows you to:
+# - create a new branch
+# - delete an existing branch
+# - switch to a new branch
+
+if(@ARGV == 0){
+  print `git branch`;
+  exit(0);
+}
+
+my $branch = shift;
+
+if($D){
+  if(branch_exists($branch)){
+    if(is_on_branch($branch)){
+      `git checkout master`;
+    }
+    print `git branch -D $branch`;
+  } else {
+    die "Couldn't delete: Branch $branch doesn't exist.\n";
+  } 
+} else {
+  if(branch_exists($branch)){
+    `git checkout $branch`;
+  } else {
+    print "Branch $branch doesn't exist. Would you like to create it? (y/n) ";
+    chomp(my $ans = <STDIN>);
+    if($ans eq "y" || $ans eq "yes"){
+      `git checkout -b $branch`;
+    }
+  } 
+}
+
+sub is_on_branch {
+  my($br) = @_;
+  my @branches = [];
+  my $found = 0;
+
+  @branches = split("\n",`git branch`); 
+
+  for my $branch (@branches) {
+    chomp $branch;
+    my $bra = $branch;
+    $bra =~ s/\*?\s+//g;
+
+    if($branch =~ m/^\*/ and $br eq $bra){
+      $found = 1;
+    }
+  }
+
+  return $found;
+}
+
+sub branch_exists {
+  my($br) = @_;
+  my @branches = [];
+  my $found = 0;
+
+  @branches = split("\n",`git branch`); 
+
+  for my $branch (@branches) {
+    chomp $branch;
+    $branch =~ s/\*?\s+//g;
+
+    if($br and $branch eq $br){
+      $found = 1;
+    }
+  }
+
+  return $found;
+} 
