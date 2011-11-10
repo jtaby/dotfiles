@@ -37,5 +37,6 @@ parse_git_dirty() {
 local return_code="%(?..%{$fg[red]%}%? ↵%{$reset_color%})"
 
 function precmd {
-  PROMPT=" %{$fg[red]%}%n%{$reset_color%} on %{$fg[red]%}%m%{$reset_color%} in %{$fg_bold[green]%}$(collapse_pwd)%{$reset_color%}$(git_prompt_info) $(prompt_char) "
+  PROMPT="
+%{$fg[red]%}%n%{$reset_color%} on %{$fg[red]%}%m%{$reset_color%} in %{$fg_bold[green]%}$(collapse_pwd)%{$reset_color%}$(git_prompt_info) $(prompt_char) "
 }
