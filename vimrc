@@ -87,6 +87,32 @@ set t_Co=256
 " let g:CSApprox_attr_map = { 'bold')
 color rdark
 
+:set laststatus=2
+" Status line ------------------------------------------------------------- {{{
+
+augroup ft_statuslinecolor
+    au!
+
+    au InsertEnter * hi StatusLine ctermfg=196 guifg=#FF3145
+    au InsertLeave * hi StatusLine ctermfg=130 guifg=#CD5907
+augroup END
+
+set statusline=%f    " Path.
+set statusline+=%m   " Modified flag.
+set statusline+=%r   " Readonly flag.
+set statusline+=%w   " Preview window flag.
+
+set statusline+=\    " Space.
+
+set statusline+=%=   " Right align.
+
+" File format, encoding and type.  Ex: "(unix/utf-8/python)"
+set statusline+=(Type\: 
+set statusline+=%{&ft}                        " Type (python).
+set statusline+=)
+
+" }}}
+
 " Create Blank Newlines and stay in Normal mode
 nnoremap <silent> zj o<Esc>
 nnoremap <silent> zk O<Esc>
