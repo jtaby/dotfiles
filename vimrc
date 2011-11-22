@@ -78,7 +78,14 @@ map <C-l> <C-w>l
 " Command-T configuration
 let g:CommandTMaxHeight=20
 
-color solarized
+
+" IMPORTANT: Uncomment one of the following lines to force
+" " using 256 colors (or 88 colors) if your terminal supports it,
+" " but does not automatically use 256 colors by default.
+set t_Co=256
+" "set t_Co=88
+" let g:CSApprox_attr_map = { 'bold')
+color rdark
 
 " Create Blank Newlines and stay in Normal mode
 nnoremap <silent> zj o<Esc>
@@ -106,8 +113,6 @@ let delimitMate_expand_cr = 1
 
 set background=dark
 
-let g:solarized_termcolors=256
-
 set nobackup
 set nowritebackup
 set noswapfile
@@ -116,3 +121,8 @@ set noswapfile
 " Rehighlight visual block after left/right shift
 vnoremap < <gv
 vnoremap > >gv
+
+" We have a big repository, sadly enough
+let g:CommandTMaxFiles=50000
+" Make delete work as backspace
+"let g:CommandTBackspaceMap='<Del>'
