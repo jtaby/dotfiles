@@ -167,3 +167,27 @@ nnoremap <leader>gci :Gcommit<cr>
 nnoremap <leader>gm :Gmove<cr>
 nnoremap <leader>gr :Gremove<cr>
 nnoremap <leader>gl :Shell git gl -18<cr>:wincmd \|<cr>
+
+
+" Split/Join {{{
+"
+" Basically this splits the current line into two new ones at the cursor
+position,
+" then joins the second one with whatever comes next.
+"
+" Example:                      Cursor Here
+"                                    |
+"                                    V
+" foo = ('hello', 'world', 'a', 'b', 'c',
+"        'd', 'e')
+"
+"            becomes
+"
+" foo = ('hello', 'world', 'a', 'b',
+"        'c', 'd', 'e')
+"
+" Especially useful for adding items in the middle of long lists/tuples in
+Python
+" while maintaining a sane text width.
+nnoremap K h/[^ ]<cr>"zd$jyyP^v$h"zpJk:s/\v +$//<cr>:noh<cr>j^
+" }}}}
