@@ -20,6 +20,8 @@ endif
 " Treat JSON files like JavaScript
 au BufNewFile,BufRead *.json set ft=javascript
 
+au BufEnter * silent! lcd %:p:h
+
 set nocompatible 
 
 " Use 2 spaces instead of tabs
@@ -82,19 +84,18 @@ let g:CommandTMaxHeight=20
 " IMPORTANT: Uncomment one of the following lines to force
 " " using 256 colors (or 88 colors) if your terminal supports it,
 " " but does not automatically use 256 colors by default.
-set t_Co=256
+"set t_Co=256
 " "set t_Co=88
-" let g:CSApprox_attr_map = { 'bold')
-color rdark
+let g:CSApprox_attr_map = ( 'bold')
 
 :set laststatus=2
 " Status line ------------------------------------------------------------- {{{
 
 augroup ft_statuslinecolor
-    au!
+  au!
 
-    au InsertEnter * hi StatusLine ctermfg=196 guifg=#FF3145
-    au InsertLeave * hi StatusLine ctermfg=130 guifg=#CD5907
+  au InsertEnter * hi StatusLine ctermfg=196 guifg=#E8E11C
+  au InsertLeave * hi StatusLine ctermfg=130 guifg=#687778
 augroup END
 
 set statusline=%f    " Path.
@@ -138,6 +139,7 @@ set smartcase
 let delimitMate_expand_cr = 1
 
 set background=dark
+color solarized
 
 set nobackup
 set nowritebackup
@@ -152,3 +154,5 @@ vnoremap > >gv
 let g:CommandTMaxFiles=50000
 " Make delete work as backspace
 "let g:CommandTBackspaceMap='<Del>'
+
+set mouse=a
