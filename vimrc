@@ -49,9 +49,6 @@ let mapleader = ";"
 " Show arrows in nerdtree
 let NERDTreeDirArrows=1
 
-" Ignore sproutcore build cruft
-let NERDTreeIgnore=['assets/$', 'strobe/$']
-
 nmap <Leader>n :NERDTreeToggle<CR>
 
 " The single greatest human achievement

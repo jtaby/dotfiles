@@ -5,6 +5,7 @@
 # Path to your oh-my-zsh configuration.
 export DOTFILES=$HOME/dotfiles
 export PATH=$DOTFILES/bin:$PATH
+export PATH=$HOME/bin:$PATH
 
 for config_file ($DOTFILES/zsh.conf/lib/*.zsh) source $config_file
 for config_file ($DOTFILES/zsh.conf/plugins/*.zsh) source $config_file
