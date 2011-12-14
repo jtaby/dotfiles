@@ -40,3 +40,6 @@
 [submodule "vim/bundle/Rainbow-Parenthesis"]
 	path = vim/bundle/Rainbow-Parenthesis
 	url = https://github.com/vim-scripts/Rainbow-Parenthesis.git
+[submodule "vim/bundle/camelcasemotion"]
+	path = vim/bundle/camelcasemotion
+	url = https://github.com/vim-scripts/camelcasemotion.git

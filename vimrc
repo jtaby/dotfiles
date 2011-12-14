@@ -169,7 +169,7 @@ nnoremap <leader>gl :Shell git gl -18<cr>:wincmd \|<cr>
 " Split/Join {{{
 "
 " Basically this splits the current line into two new ones at the cursor
-position,
+" position,
 " then joins the second one with whatever comes next.
 "
 " Example:                      Cursor Here
@@ -184,7 +184,7 @@ position,
 "        'c', 'd', 'e')
 "
 " Especially useful for adding items in the middle of long lists/tuples in
-Python
+" Python
 " while maintaining a sane text width.
 nnoremap K h/[^ ]<cr>"zd$jyyP^v$h"zpJk:s/\v +$//<cr>:noh<cr>j^
 " }}}}
