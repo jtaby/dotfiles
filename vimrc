@@ -20,7 +20,7 @@ endif
 " Treat JSON files like JavaScript
 au BufNewFile,BufRead *.json set ft=javascript
 
-au BufEnter * silent! lcd %:p:h
+"au BufEnter * silent! lcd %:p:h
 
 set nocompatible 
 
@@ -81,7 +81,7 @@ let g:CommandTMaxHeight=20
 " IMPORTANT: Uncomment one of the following lines to force
 " " using 256 colors (or 88 colors) if your terminal supports it,
 " " but does not automatically use 256 colors by default.
-"set t_Co=256
+set t_Co=256
 " "set t_Co=88
 let g:CSApprox_attr_map = ( 'bold')
 
@@ -136,7 +136,7 @@ set smartcase
 let delimitMate_expand_cr = 1
 
 set background=dark
-color solarized
+color rdark
 
 set nobackup
 set nowritebackup
@@ -188,3 +188,6 @@ nnoremap <leader>gl :Shell git gl -18<cr>:wincmd \|<cr>
 " while maintaining a sane text width.
 nnoremap K h/[^ ]<cr>"zd$jyyP^v$h"zpJk:s/\v +$//<cr>:noh<cr>j^
 " }}}}
+" 
+" Auto save when we go elsewhere
+au FocusLost * :wa
