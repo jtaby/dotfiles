@@ -43,3 +43,6 @@
 [submodule "vim/bundle/camelcasemotion"]
 	path = vim/bundle/camelcasemotion
 	url = https://github.com/vim-scripts/camelcasemotion.git
+[submodule "vim/bundle/ZoomWin"]
+	path = vim/bundle/ZoomWin
+	url = https://github.com/vim-scripts/ZoomWin.git
