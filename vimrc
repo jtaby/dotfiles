@@ -20,7 +20,7 @@ endif
 " Treat JSON files like JavaScript
 au BufNewFile,BufRead *.json set ft=javascript
 
-"au BufEnter * silent! lcd %:p:h
+au BufNewFile,BufRead *.textile set ft=textile
 
 set nocompatible 
 

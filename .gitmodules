@@ -46,3 +46,6 @@
 [submodule "vim/bundle/ZoomWin"]
 	path = vim/bundle/ZoomWin
 	url = https://github.com/vim-scripts/ZoomWin.git
+[submodule "vim/bundle/textile.vim"]
+	path = vim/bundle/textile.vim
+	url = https://github.com/timcharper/textile.vim.git
