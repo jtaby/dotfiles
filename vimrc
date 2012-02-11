@@ -21,6 +21,7 @@ endif
 au BufNewFile,BufRead *.json set ft=javascript
 
 au BufNewFile,BufRead *.textile set ft=textile
+au BufNewFile,BufRead *.less set ft=less
 
 set nocompatible 
 
@@ -50,6 +51,8 @@ let mapleader = ";"
 let NERDTreeDirArrows=1
 
 nmap <Leader>n :NERDTreeToggle<CR>
+nmap <Leader>w :w<CR>
+nmap <Leader><Leader> :ZoomWin<CR>
 
 " The single greatest human achievement
 nnoremap <Leader> :
@@ -165,6 +168,11 @@ nnoremap <leader>gm :Gmove<cr>
 nnoremap <leader>gr :Gremove<cr>
 nnoremap <leader>gl :Shell git gl -18<cr>:wincmd \|<cr>
 
+noremap  <buffer> <silent> k gk
+noremap  <buffer> <silent> j gj
+noremap  <buffer> <silent> 0 g0
+noremap  <buffer> <silent> $ g$
+
 
 " Split/Join {{{
 "
@@ -190,4 +198,6 @@ nnoremap K h/[^ ]<cr>"zd$jyyP^v$h"zpJk:s/\v +$//<cr>:noh<cr>j^
 " }}}}
 " 
 " Auto save when we go elsewhere
-au FocusLost * :wa
+"au FocusLost * :wa
+
+source $DOTFILES/private/*.vim

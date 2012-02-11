@@ -49,3 +49,9 @@
 [submodule "vim/bundle/textile.vim"]
 	path = vim/bundle/textile.vim
 	url = https://github.com/timcharper/textile.vim.git
+[submodule "vim/bundle/less.vim"]
+	path = vim/bundle/less.vim
+	url = https://github.com/vim-scripts/less.vim.git
+[submodule "vim/bundle/vim-less"]
+	path = vim/bundle/vim-less
+	url = https://github.com/lunaru/vim-less.git
