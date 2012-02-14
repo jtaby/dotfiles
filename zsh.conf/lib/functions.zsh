@@ -1,6 +1,6 @@
 # I could never remember the arguments for tar
 function compress() {
-  tar cvzf $@
+  tar cvzf $1.tar.gz $1
 }
 
 function uncompress() {
