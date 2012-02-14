@@ -18,4 +18,5 @@ compinit
 
 export EDITOR=vim
 
+[[ -s "/home/majd/.profile" ]] && source "/home/majd/.profile"
 [[ -s "/Users/majd/.rvm/scripts/rvm" ]] && source "/Users/majd/.rvm/scripts/rvm" 
