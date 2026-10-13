@@ -17,6 +17,10 @@
 # scheme enables in Xcode. The console shows all of its output, newest at the
 # bottom, and keeps it in DerivedData-CommandLine/last-console.log. Type to
 # filter it. Press ? in the console for all of its keys, which _dr_help lists.
+#
+# An app cannot launch on a locked iPhone or iPad. If the device is locked when
+# the app is ready, the script waits until you unlock it. It shows a desktop
+# notification and rings the terminal bell, so you know that it waits.
 
 # Most terminal lines that the live build view uses, including its status line.
 DR_VIEW_LINES=20
@@ -30,6 +34,11 @@ DR_STOPPED_STATUS=130
 DR_STOP_GRACE=10
 # Seconds between checks while the script waits for a process to end.
 DR_POLL_INTERVAL=0.2
+# Seconds between checks while the script waits for a locked device. Each
+# check also takes about 0.5s.
+DR_UNLOCK_POLL=1
+# Seconds that one check of the device lock state can take before it fails.
+DR_LOCK_CHECK_TIMEOUT=10
 # Prompt for less. In a less prompt, a backslash keeps : and . literal.
 DR_PAGER_PROMPT='Build output so far\. q\: back to the build, G\: newest lines, F\: follow \(Ctrl-X stops\)'
 
@@ -510,6 +519,42 @@ _dr_show_simulators() {
   done
 }
 
+# _dr_alert <title> <body>
+# Shows a desktop notification with OSC 777, which Ghostty supports. Also rings
+# the bell: if Ghostty does not have focus, it bounces its Dock icon, and it
+# puts a bell in the tab title. In tmux, the notification gets through only if
+# allow-passthrough is on.
+_dr_alert() {
+  local notify=$'\e]777;notify;'$1';'$2$'\e\\'
+  [[ -n $TMUX ]] && notify=$'\ePtmux;'${notify//$'\e'/$'\e\e'}$'\e\\'
+  { print -rn -- $notify$'\a' > /dev/tty } 2>/dev/null
+  return 0
+}
+
+# _dr_device_locked
+# Succeeds if the device DR_ID is locked. Fails if it is unlocked or if
+# devicectl cannot get its state, so a failed check does not stop the launch.
+_dr_device_locked() {
+  xcrun devicectl device info lockState --device $DR_ID --quiet \
+    --timeout $DR_LOCK_CHECK_TIMEOUT --json-output - 2>/dev/null |
+    jq -e '.result.passcodeRequired == true' >/dev/null
+}
+
+# _dr_wait_for_unlock
+# If the device DR_ID is locked, shows an alert and waits until the user
+# unlocks it. Ctrl-C stops the wait and the script.
+_dr_wait_for_unlock() {
+  _dr_device_locked || return 0
+  local start=$SECONDS
+  print -u2 "$DR_NAME is locked. Unlock it to launch Darkroom, or press Ctrl-C to stop."
+  _dr_alert Darkroom "Unlock $DR_NAME to launch Darkroom"
+  while _dr_device_locked; do
+    sleep $DR_UNLOCK_POLL
+  done
+  _dr_duration $(( SECONDS - start ))
+  print -u2 "$DR_NAME unlocked after $REPLY"
+}
+
 # _dr_launch <app> <log>
 # Installs the app on the destination if necessary. Then starts it in the
 # background, in a process group of its own, and writes all of its output to
@@ -534,6 +579,7 @@ _dr_launch() {
       bundle_id=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' $app/Info.plist)
       print -u2 "Installing on $DR_NAME"
       xcrun devicectl device install app --device $DR_ID $app >/dev/null || return 1
+      _dr_wait_for_unlock
       # devicectl removes the DEVICECTL_CHILD_ prefix and gives the variables
       # to the app. It sends the signals that it gets to the app.
       command=(env NSUnbufferedIO=YES DEVICECTL_CHILD_NSUnbufferedIO=YES ${DR_APP_ENV/#/DEVICECTL_CHILD_}
