@@ -25,6 +25,8 @@ alias gcmsg="git commit -m "
 alias gd="git diff"
 alias gb="git branch"
 alias gco="git checkout"
+alias gfa="git fetch --all"
+alias gri="git rebase -i origin/develop"
 
 current_branch() {
   git symbolic-ref --quiet --short HEAD
@@ -44,6 +46,13 @@ ggu() {
   }
   git pull --rebase origin "$branch"
 }
+export PATH="$HOME/.local/bin:$PATH"
+export PATH="$PATH:$HOME/.platformio/penv/bin"
+
+if command -v wt >/dev/null 2>&1; then eval "$(command wt config shell init zsh)"; fi
+
+# Add RVM to PATH for scripting. Make sure this is the last PATH variable change.
+export PATH="$PATH:$HOME/.rvm/bin"
 
 # Darkroom: dr builds and runs the app from the current worktree.
 dr() { zsh ~/github/dotfiles/darkroom.zsh "$@" }
