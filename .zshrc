@@ -44,3 +44,6 @@ ggu() {
   }
   git pull --rebase origin "$branch"
 }
+
+# Darkroom: dr builds and runs the app from the current worktree.
+dr() { zsh ~/github/dotfiles/darkroom.zsh "$@" }

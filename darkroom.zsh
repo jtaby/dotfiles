@@ -1,19 +1,22 @@
 #!/bin/zsh
-# Build and launch Darkroom from the current git worktree without opening Xcode.
-# fish and zsh wrap this script as drmac and drphone.
+# Build and run Darkroom from the current git worktree without opening Xcode.
+# fish and zsh wrap this script as dr.
 #
-#   darkroom.zsh mac [--logs]              Build for Mac Catalyst, then open the app.
-#   darkroom.zsh phone [--logs] [device]   Build for iOS, install on a device, then launch.
-#                               device: part of the name or a UDID. Default: the
-#                               first connected iPhone/iPad (USB first).
+#   darkroom.zsh   Pick where to run the app: this Mac, a connected iPhone or
+#                  iPad, or an iOS simulator. Then build the app, run it there,
+#                  and show its console.
 #
-# --logs keeps the app attached to the terminal and prints its stdout/stderr.
 # Builds go to <worktree>/darkroom-app/DerivedData-CommandLine, so they don't
 # collide with Xcode. The first build in a new worktree clones the Swift
 # packages from the main checkout instead of fetching them again.
 #
 # In a terminal, the build shows as a live view of at most DR_VIEW_LINES lines.
 # Press v to read all of the build output so far in less. Ctrl-C stops the build.
+#
+# The app gets the launch arguments and environment variables that the HSL
+# scheme enables in Xcode. The console shows all of its output, newest at the
+# bottom, and keeps it in DerivedData-CommandLine/last-console.log. Type to
+# filter it. Press ? in the console for all of its keys, which _dr_help lists.
 
 # Most terminal lines that the live build view uses, including its status line.
 DR_VIEW_LINES=20
@@ -23,10 +26,25 @@ DR_VIEW_REFRESH=0.2
 DR_FAILURE_LINES=15
 # Exit status of a build that Ctrl-C stopped: 128 + SIGINT, like a shell.
 DR_STOPPED_STATUS=130
-# Seconds that a stopped build gets to cancel before it is killed.
+# Seconds that a stopped build or app gets to end before it is killed.
 DR_STOP_GRACE=10
+# Seconds between checks while the script waits for a process to end.
+DR_POLL_INTERVAL=0.2
 # Prompt for less. In a less prompt, a backslash keeps : and . literal.
 DR_PAGER_PROMPT='Build output so far\. q\: back to the build, G\: newest lines, F\: follow \(Ctrl-X stops\)'
+
+# Most lines that the console keeps for filtering. The log file keeps all lines.
+DR_CONSOLE_LINES=200000
+# Folder for the console lines that Ctrl-S saves. The environment can set it.
+DR_SAVE_DIR=${DR_SAVE_DIR:-$HOME/Desktop}
+# Height of the destination list, as fzf --height takes it. ~ shrinks the
+# list when there are fewer destinations.
+DR_PICKER_HEIGHT='~70%'
+# Remembers the last destination, so the list starts on it next time.
+DR_LAST_DESTINATION=${XDG_CACHE_HOME:-$HOME/.cache}/darkroom/last-destination
+
+# Full path of this script, for the console key bindings that call it again.
+DR_SCRIPT=${0:A}
 
 # Patterns for the lines that _dr_progress prints.
 DR_STEP_PATTERN='\[*'
@@ -292,27 +310,32 @@ _dr_xcodebuild() (
     -skipMacroValidation -skipPackagePluginValidation
 )
 
+# _dr_setup
+# Sets DR_ROOT, DR_APP_DIR, and DR_DERIVED for the current worktree, and
+# exports DEVELOPER_DIR for xcodebuild, devicectl, and simctl.
+_dr_setup() {
+  DR_ROOT=$(git rev-parse --show-toplevel 2>/dev/null) || {
+    print -u2 "Not in a git worktree"
+    return 1
+  }
+  DR_APP_DIR=$DR_ROOT/darkroom-app
+  if [[ ! -d $DR_APP_DIR/HSL.xcworkspace ]]; then
+    print -u2 "No darkroom-app/HSL.xcworkspace in $DR_ROOT"
+    return 1
+  fi
+  DR_DERIVED=$DR_APP_DIR/DerivedData-CommandLine
+  DEVELOPER_DIR=$(_dr_developer_dir) || return 1
+  export DEVELOPER_DIR
+}
+
 # _dr_build <sdk-dir-suffix> <destination> <platform-name>
 # Sets REPLY to the path of the built Darkroom.app on success. It runs in the
 # current shell, not in $(...), so its Ctrl-C handling can stop the build and
 # clean up before the script exits.
 _dr_build() {
   local products_dir=$1 destination=$2 platform=$3
-  local root
-  root=$(git rev-parse --show-toplevel 2>/dev/null) || {
-    print -u2 "Not in a git worktree"
-    return 1
-  }
-  local app_dir=$root/darkroom-app
-  if [[ ! -d $app_dir/HSL.xcworkspace ]]; then
-    print -u2 "No darkroom-app/HSL.xcworkspace in $root"
-    return 1
-  fi
-
-  local developer_dir
-  developer_dir=$(_dr_developer_dir) || return 1
-
-  local derived=$app_dir/DerivedData-CommandLine
+  local root=$DR_ROOT app_dir=$DR_APP_DIR developer_dir=$DEVELOPER_DIR
+  local derived=$DR_DERIVED
   local main_root=$(git -C $root rev-parse --path-format=absolute --git-common-dir)
   local seed=${main_root:h}/darkroom-app/DerivedData-CommandLine/SourcePackages
   if [[ ! -d $derived/SourcePackages && -d $seed && ${seed:A} != ${derived:A}/SourcePackages ]]; then
@@ -384,75 +407,325 @@ _dr_build() {
   REPLY=$derived/Build/Products/$products_dir/Darkroom.app
 }
 
-drmac() {
-  local logs=0
-  [[ $1 == --logs ]] && logs=1
+# _dr_destinations
+# Prints one tab-separated line per place that can run the app: kind (mac,
+# device, or simulator), ID, name, type, and details. This Mac comes first, then
+# reachable iPhones, then reachable iPads (USB before network), then iOS
+# simulators: booted ones first, then the newest iOS versions.
+_dr_destinations() {
+  print -r -- "mac"$'\t'"mac"$'\t'"My Mac"$'\t'"Mac"$'\t'"Mac Catalyst · macOS $(sw_vers -productVersion)"
 
-  _dr_build Debug-maccatalyst 'platform=macOS,variant=Mac Catalyst' 'Mac Catalyst' || return 1
-  local app=$REPLY
-
-  # Quit a running copy first, like Xcode does, so the new build is the one that opens.
-  local executable=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' $app/Contents/Info.plist)
-  if pkill -x $executable 2>/dev/null; then
-    while pgrep -x $executable >/dev/null; do sleep 0.2; done
-  fi
-
-  if (( logs )); then
-    print -u2 "Running $app (Ctrl-C to quit)"
-    $app/Contents/MacOS/$executable
-  else
-    open $app
-  fi
-}
-
-drphone() {
-  local logs=0
-  [[ $1 == --logs ]] && { logs=1; shift }
-  local query=$1
-
-  local developer_dir
-  developer_dir=$(_dr_developer_dir) || return 1
-
-  # Pick the device before building, so a missing phone fails fast.
-  local json=$(mktemp -t drphone)
-  DEVELOPER_DIR=$developer_dir xcrun devicectl list devices --json-output $json >/dev/null 2>&1
-  local device
-  device=$(jq -r --arg q "$query" '
-    [.result.devices[]
+  local json=$(mktemp -t darkroom-devices)
+  xcrun devicectl list devices --json-output $json >/dev/null 2>&1
+  jq -r '
+    [.result.devices[]?
       | select(.hardwareProperties.reality == "physical")
       | select(.hardwareProperties.platform == "iOS")
-      | select($q == ""
-          or (.deviceProperties.name | ascii_downcase | contains($q | ascii_downcase))
-          or .hardwareProperties.udid == $q
-          or .identifier == $q)
       | select(.connectionProperties.transportType != null)]
-    | sort_by(.connectionProperties.tunnelState != "connected",
-              .connectionProperties.transportType != "wired")
-    | first // empty
-    | "\(.identifier)\t\(.deviceProperties.name)"' $json)
+    | sort_by(.hardwareProperties.deviceType != "iPhone",
+              .connectionProperties.transportType != "wired",
+              .deviceProperties.name)
+    | .[]
+    | (if .hardwareProperties.deviceType == "iPad" then "iPadOS" else "iOS" end) as $os
+    | (if .connectionProperties.transportType == "wired" then "USB" else "Network" end) as $link
+    | ["device", .identifier, .deviceProperties.name, .hardwareProperties.deviceType,
+       "\(.hardwareProperties.marketingName) · \($os) \(.deviceProperties.osVersionNumber) · \($link)"]
+    | join("\t")' $json 2>/dev/null
   rm -f $json
-  if [[ -z $device ]]; then
-    print -u2 "No reachable iOS device${query:+ matching \"$query\"}. Connect it, unlock it, and try again."
-    return 1
-  fi
-  local device_id=${device%%$'\t'*} device_name=${device#*$'\t'}
-  print -u2 "Device: $device_name"
 
-  _dr_build Debug-iphoneos 'generic/platform=iOS' iOS || return 1
-  local app=$REPLY
-  local bundle_id=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' $app/Info.plist)
-
-  print -u2 "Installing on $device_name"
-  DEVELOPER_DIR=$developer_dir xcrun devicectl device install app --device $device_id $app >/dev/null || return 1
-
-  print -u2 "Launching $bundle_id"
-  local launch_args=(--device $device_id --terminate-existing)
-  (( logs )) && launch_args+=(--console)
-  DEVELOPER_DIR=$developer_dir xcrun devicectl device process launch $launch_args $bundle_id
+  xcrun simctl list devices available --json 2>/dev/null | jq -r '
+    [.devices | to_entries[]
+      | select(.key | test("SimRuntime\\.iOS-"))
+      | (.key | capture("iOS-(?<v>[0-9-]+)$").v | split("-") | map(tonumber)) as $version
+      | .value[]
+      | {udid, name, $version, booted: (.state == "Booted"),
+         ipad: (.deviceTypeIdentifier | test("iPad"))}]
+    | sort_by((.booted | not), (.version | map(-.)), .ipad, .name)
+    | .[]
+    | ["simulator", .udid, .name, "Simulator",
+       "iOS \(.version | map(tostring) | join("."))\(if .booted then " · Booted" else "" end)"]
+    | join("\t")'
 }
 
-case $1 in
-  mac) shift; drmac "$@" ;;
-  phone) shift; drphone "$@" ;;
-  *) print -u2 "Usage: ${0:t} mac [--logs] | phone [--logs] [device]"; exit 2 ;;
-esac
+# _dr_pick
+# Lists the destinations in fzf and sets DR_KIND, DR_ID, and DR_NAME to the
+# one that the user picks. The list starts on the last destination.
+_dr_pick() {
+  local -a rows=("${(@f)$(_dr_destinations)}") fields lines
+  local row last choice
+  local -i type_width name_width selected=1 i
+  for row in $rows; do
+    fields=("${(@ps:\t:)row}")
+    (( ${#fields[4]} > type_width )) && type_width=${#fields[4]}
+    (( ${#fields[3]} > name_width )) && name_width=${#fields[3]}
+  done
+  [[ -r $DR_LAST_DESTINATION ]] && last=$(<$DR_LAST_DESTINATION)
+  for (( i = 1; i <= $#rows; i++ )); do
+    fields=("${(@ps:\t:)rows[i]}")
+    [[ $fields[2] == "$last" ]] && selected=i
+    # fzf shows only the 4th field: the type, name, and details in columns.
+    lines+=("${(pj:\t:)fields[1,3]}"$'\t\e[2m'"${(r:type_width:)fields[4]}"$'\e[0m  '"${(r:name_width:)fields[3]}"$'  \e[2m'"$fields[5]"$'\e[0m')
+  done
+
+  choice=$(print -rl -- $lines | fzf --ansi --no-sort --exact --layout=reverse \
+    --height=$DR_PICKER_HEIGHT --delimiter='\t' --with-nth=4 \
+    --prompt='Run Darkroom on: ' --header='enter: build and run · esc: cancel' \
+    --bind="load:pos($selected)") || return 1
+  fields=("${(@ps:\t:)choice}")
+  DR_KIND=$fields[1] DR_ID=$fields[2] DR_NAME=$fields[3]
+  mkdir -p ${DR_LAST_DESTINATION:h} && print -r -- $DR_ID > $DR_LAST_DESTINATION
+}
+
+# _dr_scheme_launch
+# Sets DR_APP_ARGS and DR_APP_ENV (NAME=value items) to the launch arguments
+# and environment variables that the HSL scheme enables, so the app runs like
+# it does from Xcode.
+_dr_scheme_launch() {
+  local scheme=$DR_APP_DIR/HSL.xcworkspace/xcshareddata/xcschemes/HSL.xcscheme
+  local arguments='//LaunchAction/CommandLineArguments/CommandLineArgument[@isEnabled="YES"]'
+  local variables='//LaunchAction/EnvironmentVariables/EnvironmentVariable[@isEnabled="YES"]'
+  local -i i count
+  DR_APP_ARGS=() DR_APP_ENV=()
+  [[ -r $scheme ]] || return 0
+  count=$(xmllint --xpath "count($arguments)" $scheme 2>/dev/null)
+  for (( i = 1; i <= count; i++ )); do
+    # Xcode splits each argument into words like a shell does.
+    DR_APP_ARGS+=(${(Q)${(z)"$(xmllint --xpath "string(($arguments)[$i]/@argument)" $scheme)"}})
+  done
+  count=$(xmllint --xpath "count($variables)" $scheme 2>/dev/null)
+  for (( i = 1; i <= count; i++ )); do
+    DR_APP_ENV+=("$(xmllint --xpath "string(($variables)[$i]/@key)" $scheme)=$(xmllint --xpath "string(($variables)[$i]/@value)" $scheme)")
+  done
+}
+
+# Opens the app that shows simulators: Simulator in older Xcode versions,
+# DeviceHub from Xcode 27.
+_dr_show_simulators() {
+  local viewer
+  for viewer in $DEVELOPER_DIR/Applications/Simulator.app $DEVELOPER_DIR:h/Applications/DeviceHub.app; do
+    if [[ -d $viewer ]]; then
+      open -a $viewer
+      return
+    fi
+  done
+}
+
+# _dr_launch <app> <log>
+# Installs the app on the destination if necessary. Then starts it in the
+# background, in a process group of its own, and writes all of its output to
+# the log. Sets REPLY to the process group ID. The group ends when the app ends.
+_dr_launch() {
+  local app=$1 log=$2 bundle_id executable
+  local -a command
+  _dr_scheme_launch
+
+  # NSUnbufferedIO=YES makes Foundation write print() output immediately, as
+  # it does in Xcode. Without it, output to a file comes in large blocks.
+  case $DR_KIND in
+    mac)
+      executable=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' $app/Contents/Info.plist)
+      # Quit a running copy first, like Xcode does, so the new build is the one that runs.
+      if pkill -x $executable 2>/dev/null; then
+        while pgrep -x $executable >/dev/null; do sleep $DR_POLL_INTERVAL; done
+      fi
+      command=(env NSUnbufferedIO=YES $DR_APP_ENV $app/Contents/MacOS/$executable $DR_APP_ARGS)
+      ;;
+    device)
+      bundle_id=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' $app/Info.plist)
+      print -u2 "Installing on $DR_NAME"
+      xcrun devicectl device install app --device $DR_ID $app >/dev/null || return 1
+      # devicectl removes the DEVICECTL_CHILD_ prefix and gives the variables
+      # to the app. It sends the signals that it gets to the app.
+      command=(env NSUnbufferedIO=YES DEVICECTL_CHILD_NSUnbufferedIO=YES ${DR_APP_ENV/#/DEVICECTL_CHILD_}
+        xcrun devicectl device process launch --console --terminate-existing
+        --device $DR_ID $bundle_id -- $DR_APP_ARGS)
+      ;;
+    simulator)
+      bundle_id=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' $app/Info.plist)
+      print -u2 "Starting $DR_NAME"
+      xcrun simctl bootstatus $DR_ID -b >/dev/null || return 1
+      _dr_show_simulators
+      print -u2 "Installing on $DR_NAME"
+      xcrun simctl install $DR_ID $app || return 1
+      # simctl removes the SIMCTL_CHILD_ prefix and gives the variables to the
+      # app. It sends the signals that it gets to the app.
+      command=(env NSUnbufferedIO=YES SIMCTL_CHILD_NSUnbufferedIO=YES ${DR_APP_ENV/#/SIMCTL_CHILD_}
+        xcrun simctl launch --console --terminate-running-process $DR_ID $bundle_id $DR_APP_ARGS)
+      ;;
+  esac
+
+  print -u2 "Launching Darkroom on $DR_NAME"
+  : > $log
+  # simctl --console stops following the app at the end of its input, so the
+  # input must stay open. The terminal is not a possible input, because the
+  # console reads the keys from it. The launch command opens this pipe for both
+  # reading and writing, so the pipe has a writer and never ends.
+  local input=$DR_DERIVED/console-input
+  rm -f $input && mkfifo $input || return 1
+  # monitor gives the app a process group of its own, so _dr_stop can signal
+  # all of it. &! keeps zsh from printing a job number.
+  () {
+    setopt local_options monitor
+    (
+      $command <> $input >> $log 2>&1
+      print -r -- "── Darkroom ended with exit status $? ──" >> $log
+    ) </dev/null &!
+  }
+  REPLY=$!
+}
+
+# _dr_stop <group-id>
+# Sends SIGTERM to the process group of the app. Kills the group if it is
+# still running after DR_STOP_GRACE seconds.
+_dr_stop() {
+  local group=$1
+  kill -TERM -- -$group 2>/dev/null || return 0
+  local -i deadline=$(( SECONDS + DR_STOP_GRACE ))
+  while kill -0 -- -$group 2>/dev/null && (( SECONDS < deadline )); do
+    sleep $DR_POLL_INTERVAL
+  done
+  kill -KILL -- -$group 2>/dev/null
+  return 0
+}
+
+# _dr_console <log> <title>
+# Shows the log in fzf until the user presses Ctrl-C. The notes at the top of
+# this script list the keys.
+_dr_console() {
+  local log=$1 title=$2
+  local again="zsh -f ${(q)DR_SCRIPT}"
+  # Scrolling back turns on tracking, so the line in focus stays in place when
+  # new lines come in. Going back to the newest line turns tracking off, so the
+  # view follows new lines again. The prompt shows the state, and the bindings
+  # read it from FZF_PROMPT.
+  local pause='transform:[[ $FZF_PROMPT == *paused* ]] || print "toggle-track+change-prompt:Filter (paused): "'
+  local resume='transform:(( FZF_POS == 1 )) && [[ $FZF_PROMPT == *paused* ]] && print "toggle-track+change-prompt:Filter: "'
+  # ? shows the help when the filter is empty. In a filter, it is a character.
+  local help="transform:[[ -n \$FZF_QUERY ]] && print 'put(?)' || print 'execute($again _help)'"
+  local keys='?: help · ctrl-y: copy · ctrl-s: save to a file · end: newest line · ctrl-c: stop app'
+  DR_LOG=$log DR_TITLE=$title FZF_DEFAULT_COMMAND="tail -n +1 -F ${(q)log}" fzf \
+    --with-shell='zsh -fc' \
+    --tac --no-sort --exact --tail=$DR_CONSOLE_LINES --wrap --no-multi \
+    --prompt='Filter: ' --info=inline-right --ghost='words, !hidden, a | b' \
+    --header=$keys --footer=$title \
+    --bind='enter:ignore,esc:clear-query' \
+    --bind="up:up+$pause" \
+    --bind="page-up:page-up+$pause" \
+    --bind="scroll-up:up+$pause" \
+    --bind="down:down+$resume" \
+    --bind="page-down:page-down+$resume" \
+    --bind="scroll-down:down+$resume" \
+    --bind="end:first+$resume" \
+    --bind="?:$help" \
+    --bind="ctrl-y:transform-footer:$again _export copy {*f}" \
+    --bind="ctrl-s:transform-footer:$again _export save {*f}"
+  return 0
+}
+
+# _dr_export <copy|save> <matches-file>
+# Runs from the console's Ctrl-Y and Ctrl-S. Copies to the clipboard, or saves
+# to a file, the lines that match the filter. With no filter, it uses the full
+# log. Prints the console title with a short report, for the fzf footer.
+_dr_export() {
+  local action=$1 matches=$2 source=$DR_LOG what file report
+  local -i count
+  if [[ -n $FZF_QUERY ]]; then
+    # --tac lists the newest line first. Put the lines back in log order.
+    source=$(mktemp -t darkroom-console)
+    tail -r $matches > $source
+    count=$(wc -l < $source)
+    what="$count matching line${${count:#1}:+s}"
+  else
+    count=$(wc -l < $source)
+    what="the full log ($count line${${count:#1}:+s})"
+  fi
+
+  if (( count == 0 )); then
+    report="No lines to $action"
+  elif [[ $action == copy ]]; then
+    pbcopy < $source
+    report="Copied $what"
+  else
+    file=$DR_SAVE_DIR/darkroom-console-$(date +%Y%m%d-%H%M%S).log
+    mkdir -p $DR_SAVE_DIR && cp $source $file
+    report="Saved $what to ${file/#$HOME/~}"
+  fi
+  [[ $source != $DR_LOG ]] && rm -f $source
+  print -r -- "$DR_TITLE · $report"
+}
+
+# _dr_help
+# Runs from the console's ? key. Shows the console keys on the full terminal
+# until the user presses a key.
+_dr_help() {
+  local bold=$'\e[1m' dim=$'\e[2m' plain=$'\e[0m'
+  print -n $'\e[H\e[2J'
+  print -r -- "${bold}Console keys${plain} ${dim}· $DR_TITLE${plain}
+
+  ${bold}Type${plain}          Filter the lines. A line must contain all of the words.
+                Lowercase words match any case.
+                  !word   hide the lines that contain word
+                  a | b   show the lines that contain a or b
+                  ^word   show the lines that start with word
+  ${bold}Esc${plain}           Clear the filter.
+  ${bold}Up, PgUp${plain}      Scroll back. The prompt shows \"paused\", and new lines
+                do not move the view.
+  ${bold}Down, PgDn${plain}    Scroll forward. On the newest line, the view follows
+                new lines again.
+  ${bold}End${plain}           Go to the newest line and follow new lines.
+  ${bold}Ctrl-Y${plain}        Copy the lines that match the filter to the clipboard.
+                With no filter, copy the full log.
+  ${bold}Ctrl-S${plain}        Save the same lines to a file in ${DR_SAVE_DIR/#$HOME/~}.
+  ${bold}Ctrl-C${plain}        Stop the app and end the session.
+  ${bold}?${plain}             Show this help. In a filter, ? is a usual character.
+
+  Full log: ${DR_LOG/#$HOME/~}
+
+${dim}Press any key to go back to the console.${plain}"
+  read -sk 1 </dev/tty
+}
+
+dr() {
+  if [[ ! -t 0 || ! -t 1 ]]; then
+    print -u2 "dr needs a terminal"
+    return 1
+  fi
+  _dr_setup || return 1
+  # Esc in the list cancels without an error.
+  _dr_pick || return 0
+
+  case $DR_KIND in
+    mac) _dr_build Debug-maccatalyst 'platform=macOS,variant=Mac Catalyst' 'Mac Catalyst' ;;
+    device) _dr_build Debug-iphoneos 'generic/platform=iOS' iOS ;;
+    simulator)
+      # Boot the simulator while the app builds.
+      xcrun simctl boot $DR_ID >/dev/null 2>&1 &!
+      _dr_build Debug-iphonesimulator 'generic/platform=iOS Simulator' 'iOS Simulator'
+      ;;
+  esac || return 1
+  local app=$REPLY log=$DR_DERIVED/last-console.log
+
+  _dr_launch $app $log || return 1
+  local group=$REPLY
+  # Closing the terminal also stops the app.
+  trap "_dr_stop $group; exit 1" HUP TERM
+  _dr_console $log "${DR_ROOT:t} on $DR_NAME"
+
+  if kill -0 -- -$group 2>/dev/null; then
+    _dr_stop $group
+    print -u2 "Stopped Darkroom on $DR_NAME"
+  else
+    print -u2 "Darkroom ended on $DR_NAME"
+  fi
+  print -u2 "Console log: ${log#$PWD/}"
+}
+
+# Run only when executed, not when sourced, so tests can call the functions.
+if [[ $ZSH_EVAL_CONTEXT == toplevel ]]; then
+  case $1 in
+    '') dr ;;
+    _export) shift; _dr_export "$@" ;;
+    _help) _dr_help ;;
+    *) print -u2 "Usage: ${0:t}  (no arguments: pick a destination, then build, run, and show the console)"; exit 2 ;;
+  esac
+fi
