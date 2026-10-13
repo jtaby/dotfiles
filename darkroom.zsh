@@ -276,6 +276,11 @@ _dr_watch() {
 }
 
 # _dr_xcodebuild <app-dir> <developer-dir> <destination>
+# CommonDependencies has a local .package(path:), so the originHash in
+# Package.resolved includes the checkout path. In a worktree the hash does not
+# match, and without -onlyUsePackageVersionsFromResolvedFile xcodebuild
+# resolves all packages again to their newest versions and writes them to
+# Package.resolved. Those versions can fail to resolve together.
 _dr_xcodebuild() (
   cd $1 &&
   DEVELOPER_DIR=$2 NSUnbufferedIO=YES xcodebuild build \
@@ -283,6 +288,7 @@ _dr_xcodebuild() (
     -destination $3 \
     -derivedDataPath ./DerivedData-CommandLine \
     -xcconfig ./CommandLine-Debug.xcconfig \
+    -onlyUsePackageVersionsFromResolvedFile \
     -skipMacroValidation -skipPackagePluginValidation
 )
 
