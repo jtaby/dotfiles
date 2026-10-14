@@ -54,5 +54,6 @@ if command -v wt >/dev/null 2>&1; then eval "$(command wt config shell init zsh)
 # Add RVM to PATH for scripting. Make sure this is the last PATH variable change.
 export PATH="$PATH:$HOME/.rvm/bin"
 
-# Darkroom: dr builds and runs the app from the current worktree.
-dr() { zsh ~/github/dotfiles/darkroom.zsh "$@" }
+# run builds and runs an iOS app from the current git worktree. run setup
+# changes the settings of the repository.
+run() { zsh ~/github/dotfiles/run.zsh "$@" }
